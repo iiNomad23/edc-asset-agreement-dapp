@@ -15,9 +15,14 @@ const Root = (): React.ReactElement => {
 
     React.useEffect(() => {
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        const handler = (event: MediaQueryListEvent) => setIsDarkMode(event.matches);
+        const handler = (event: MediaQueryListEvent) => {
+            setIsDarkMode(event.matches);
+        };
+
         mediaQuery.addEventListener('change', handler);
-        return () => mediaQuery.removeEventListener('change', handler);
+        return () => {
+            mediaQuery.removeEventListener('change', handler);
+        };
     }, []);
 
     return (
