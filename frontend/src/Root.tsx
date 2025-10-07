@@ -25,6 +25,10 @@ const Root = (): React.ReactElement => {
         };
     }, []);
 
+    React.useEffect(() => {
+        document.documentElement.classList.toggle('dark', isDarkMode);
+    }, [isDarkMode]);
+
     return (
         <WagmiProvider config={config}>
             <QueryClientProvider client={queryClient}>
