@@ -1,26 +1,22 @@
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import React from 'react';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import AppLayout from '@/components/AppLayout.tsx';
+import AssetsPage from '@/pages/AssetsPage.tsx';
+import AgreementsPage from '@/pages/AgreementsPage.tsx';
 
-function App() {
-    return (
-        <div
-            style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                padding: 12,
-            }}
-        >
-            <ConnectButton
-                accountStatus={{
-                    smallScreen: 'avatar',
-                    largeScreen: 'full',
-                }}
-                showBalance={{
-                    smallScreen: false,
-                    largeScreen: true,
-                }}
-            />
-        </div>
-    );
+const router = createBrowserRouter([
+    {
+        path: '/',
+        element: <AppLayout />,
+        children: [
+            { path: '/', element: <AssetsPage /> },
+            { path: '/agreements', element: <AgreementsPage /> },
+        ],
+    },
+]);
+
+const App = (): React.ReactElement => {
+    return <RouterProvider router={router} />;
 }
 
 export default App;
