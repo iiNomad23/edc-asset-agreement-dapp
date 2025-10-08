@@ -1,0 +1,27 @@
+{
+  "name": "edc-asset-agreement-smart-contracts",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "scripts": {
+    "test": "npx hardhat test",
+    "start-local-node": "npx hardhat node",
+    "clean-contracts": "npx hardhat clean",
+    "compile-contracts": "npx hardhat compile"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ignition": "^3.0.3",
+    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.0",
+    "@types/node": "^22.18.8",
+    "forge-std": "github:foundry-rs/forge-std#v1.9.4",
+    "hardhat": "^3.0.6",
+    "typescript": "~5.8.0",
+    "viem": "^2.38.0"
+  }
+}
