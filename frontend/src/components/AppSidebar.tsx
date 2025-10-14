@@ -9,14 +9,24 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const items = [
     { title: "Assets", url: "/", icon: Coins },
     { title: "Agreements", url: "/agreements", icon: FileText },
 ];
 
+function isActivePath(pathname: string, url: string) {
+    if (url === '/') {
+        return pathname === '/';
+    }
+
+    return pathname === url || pathname.startsWith(url + '/');
+}
+
 export function AppSidebar() {
+    const location = useLocation();
+
     return (
         <Sidebar>
             <SidebarContent>
@@ -26,16 +36,26 @@ export function AppSidebar() {
                         <hr />
                         <SidebarGroupContent>
                             <SidebarMenu>
-                                {items.map((item) => (
-                                    <SidebarMenuItem key={item.title}>
-                                        <SidebarMenuButton asChild>
-                                            <Link to={item.url}>
-                                                <item.icon />
-                                                <span>{item.title}</span>
-                                            </Link>
-                                        </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                ))}
+                                {items.map((item) => {
+                                    const isActive = isActivePath(location.pathname, item.url);
+                                    return (
+                                        <SidebarMenuItem key={item.title}>
+                                            <SidebarMenuButton
+                                                asChild
+                                                className={`${
+                                                    isActive
+                                                        ? 'bg-accent text-accent-foreground'
+                                                        : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                                                }`}
+                                            >
+                                                <Link to={item.url}>
+                                                    <item.icon />
+                                                    <span>{item.title}</span>
+                                                </Link>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    );
+                                })}
                             </SidebarMenu>
                         </SidebarGroupContent>
                     </div>

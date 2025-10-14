@@ -10,7 +10,14 @@
     "test": "npx hardhat test",
     "start-local-node": "npx hardhat node",
     "clean-contracts": "npx hardhat clean",
-    "compile-contracts": "npx hardhat compile"
+    "compile-contracts": "npx hardhat compile",
+    "maintenance:ncu:install": "npm install -g npm-check-updates",
+    "maintenance:ncu": "ncu --enginesNode",
+    "maintenance:ncu:u": "npm run maintenance:ncu -- --upgrade",
+    "maintenance:ncu:minor": "npm run maintenance:ncu -- --target minor",
+    "maintenance:ncu:minor:u": "npm run maintenance:ncu -- --target minor --upgrade",
+    "maintenance:ncu:patch": "npm run maintenance:ncu -- --target patch",
+    "maintenance:ncu:patch:u": "npm run maintenance:ncu -- --target patch --upgrade"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.4.0"
