@@ -1,0 +1,54 @@
+interface AssetDistribution {
+    '@type': string;
+    'dct:format': {
+        '@id': string;
+    };
+    'dcat:accessService': {
+        '@id': string;
+        '@type': string;
+    };
+}
+
+export interface CatalogAsset {
+    '@id': string;
+    '@type': string;
+    description: string;
+    'dcat:distribution'?: AssetDistribution[];
+    'odrl:hasPolicy'?: {
+        '@id': string;
+        '@type'?: string;
+        'odrl:permission'?: unknown;
+        'odrl:prohibition'?: unknown;
+        'odrl:obligation'?: unknown;
+    };
+}
+
+interface DataService {
+    '@id': string;
+    '@type': string;
+    'dcat:endpointDescription'?: string;
+    'dcat:endpointUrl'?: string;
+    'dcat:endpointURL'?: string;
+}
+
+export interface Catalog {
+    '@id': string;
+    '@type': string;
+    'dcat:dataset'?: CatalogAsset[];
+    'dcat:catalog'?: Catalog[];
+    'dcat:distribution'?: unknown[];
+    'dcat:service'?: DataService;
+    'dspace:participantId': string;
+}
+
+export interface CatalogEnvelop {
+    '@id': string;
+    '@type': string;
+    'dcat:dataset'?: CatalogAsset | CatalogAsset[];
+    'dcat:catalog'?: Catalog[];
+    'dcat:distribution'?: unknown[];
+    'dcat:service'?: DataService;
+    'dspace:participantId': string;
+    originator?: string;
+    '@context'?: Record<string, unknown>;
+}
