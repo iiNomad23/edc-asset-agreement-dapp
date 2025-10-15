@@ -42,10 +42,10 @@ const CatalogAssetCard: React.FC<CatalogAssetCardProps> = ({ asset, isSubscribin
                 {isSubscribing ? (
                     <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Subscribing...
+                        Negotiating...
                     </>
                 ) : (
-                    'Subscribe & Mint NFT'
+                    'Negotiate contract agreement'
                 )}
             </Button>
         </div>
