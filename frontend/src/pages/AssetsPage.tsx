@@ -1,13 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useAccount } from 'wagmi';
 import { Loader2 } from 'lucide-react';
 import CatalogAssetCard from '@/components/CatalogAssetCard.tsx';
 import { CatalogEnvelop } from '@/types';
+import { ContractNegotiationRequest } from '@/types/contract.ts';
+import { OdrlPolicy } from '@/types/policy.ts';
 
 const AssetsPage = (): React.ReactNode => {
     const { isConnected } = useAccount();
     const [selectedConnector, setSelectedConnector] = useState<string>('');
+    const [negotiatingAssetId, setNegotiatingAssetId] = useState<string | null>(null);
 
     const { data: cachedCatalogEnvelop, isLoading } = useQuery({
         queryKey: ['catalog'],
@@ -20,6 +23,51 @@ const AssetsPage = (): React.ReactNode => {
         },
         enabled: isConnected,
         refetchInterval: 30000,
+    });
+
+    const negotiateMutation = useMutation({
+        mutationFn: async (request: ContractNegotiationRequest) => {
+            const response = await fetch(`http://localhost:8190/api/contracts/negotiate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(request),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message ?? 'Failed to initiate negotiation');
+            }
+
+            return response.json();
+        },
+        onSuccess: async (data) => {
+            try {
+                const response = await fetch(
+                    `http://localhost:8190/api/contracts/negotiations/${data['@id']}/wait`,
+                    { method: 'POST' }
+                );
+
+                const result = await response.json();
+                if (!response.ok) {
+                    // noinspection ExceptionCaughtLocallyJS
+                    throw new Error(result.message);
+                }
+
+                alert(`Contract negotiated successfully! Agreement ID: ${result.contractAgreementId}`);
+            } catch (error) {
+                console.error(error);
+                alert(`Negotiation initiated but failed to complete.\n${error}`);
+            } finally {
+                setNegotiatingAssetId(null);
+            }
+        },
+        onError: (error: Error) => {
+            console.error('Negotiation error:', error);
+            alert(`Failed to negotiate contract: ${error.message}`);
+            setNegotiatingAssetId(null);
+        },
     });
 
     const connectors = useMemo(() => {
@@ -49,6 +97,46 @@ const AssetsPage = (): React.ReactNode => {
             setSelectedConnector(connectors[0].url);
         }
     }, [connectors, selectedConnector]);
+
+    const handleSubscribe = (assetId: string, policy: OdrlPolicy, selectedConnectorUrl: string) => {
+        if (!cachedCatalogEnvelop) {
+            return;
+        }
+
+        setNegotiatingAssetId(assetId);
+
+        const selectedConnectorCachedCatalogEnvelop = cachedCatalogEnvelop.find(envelope => {
+            const catalogs = envelope['dcat:catalog'];
+            if (!catalogs) {
+                return false;
+            }
+
+            return catalogs.some(catalog => {
+                const svc = catalog['dcat:service'];
+                if (!svc) {
+                    return false;
+                }
+
+                return svc['dcat:endpointUrl'] === selectedConnectorUrl || svc['dcat:endpointURL'] === selectedConnectorUrl;
+            });
+        });
+
+        if (!selectedConnectorCachedCatalogEnvelop) {
+            alert('Failed to determine participant id of selected connector');
+            setNegotiatingAssetId(null);
+            return;
+        }
+
+        const participantId = selectedConnectorCachedCatalogEnvelop['dspace:participantId'];
+        const request: ContractNegotiationRequest = {
+            assetId: assetId,
+            policy: policy,
+            counterPartyAddress: selectedConnectorUrl,
+            counterPartyId: participantId,
+        };
+
+        negotiateMutation.mutate(request);
+    };
 
     if (!isConnected) {
         return (
@@ -125,16 +213,27 @@ const AssetsPage = (): React.ReactNode => {
                         <div key={catalog['@id']} className="space-y-3">
                             {datasets.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {datasets.map((asset) => (
-                                        <CatalogAssetCard
-                                            key={asset['@id']}
-                                            asset={asset}
-                                            isSubscribing={false}
-                                            onSubscribe={() =>
-                                                console.warn(`Subscribing asset ${asset['@id']}`)
-                                            }
-                                        />
-                                    ))}
+                                    {datasets.map((asset) => {
+                                        const policy = asset['odrl:hasPolicy'];
+                                        const policyId = policy?.['@id'];
+                                        const assetId = asset['@id'];
+                                        const isNegotiating = negotiatingAssetId === assetId;
+
+                                        return (
+                                            <CatalogAssetCard
+                                                key={assetId}
+                                                asset={asset}
+                                                isSubscribing={isNegotiating}
+                                                onSubscribe={() => {
+                                                    if (policyId) {
+                                                        handleSubscribe(assetId, policy, selectedConnector);
+                                                    } else {
+                                                        alert('Asset policy information is missing');
+                                                    }
+                                                }}
+                                            />
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 <div className="text-sm text-muted-foreground border rounded-lg p-4">

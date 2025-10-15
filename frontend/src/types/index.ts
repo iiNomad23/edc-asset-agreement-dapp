@@ -1,3 +1,5 @@
+import { OdrlPolicy } from '@/types/policy.ts';
+
 interface AssetDistribution {
     '@type': string;
     'dct:format': {
@@ -14,13 +16,7 @@ export interface CatalogAsset {
     '@type': string;
     description: string;
     'dcat:distribution'?: AssetDistribution[];
-    'odrl:hasPolicy'?: {
-        '@id': string;
-        '@type'?: string;
-        'odrl:permission'?: unknown;
-        'odrl:prohibition'?: unknown;
-        'odrl:obligation'?: unknown;
-    };
+    'odrl:hasPolicy'?: OdrlPolicy;
 }
 
 interface DataService {
