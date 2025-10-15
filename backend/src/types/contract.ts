@@ -1,4 +1,4 @@
-import { OdrlPolicy } from './policy.js';
+import { OdrlAgreementPolicy, OdrlPolicy } from './policy.js';
 
 export interface ContractNegotiationRequest {
     assetId: string;
@@ -14,4 +14,14 @@ export interface ContractNegotiationResponse {
     createdAt: number;
     errorDetail: string;
     contractAgreementId?: string;
+}
+
+export interface ContractAgreement {
+    '@id': string;
+    '@type': string;
+    assetId: string;
+    providerId: string;
+    consumerId: string;
+    contractSigningDate: number;
+    policy: OdrlAgreementPolicy;
 }

@@ -70,4 +70,19 @@ export default async function contractRoutes(fastify: FastifyInstance) {
             }
         },
     );
+
+    fastify.get('/api/contracts/agreements', async (_request, reply) => {
+        try {
+            return await contractService.getAgreements();
+        } catch (error) {
+            fastify.log.error(error);
+
+            const errorResponse: EDCError = {
+                error: 'Failed to fetch agreements',
+                message: error instanceof Error ? error.message : 'Unknown error',
+            };
+
+            return reply.code(500).send(errorResponse);
+        }
+    });
 }
