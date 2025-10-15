@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios';
-import type { ContractNegotiationRequest, ContractNegotiationResponse } from '../types/contract.js';
+import type { ContractAgreement, ContractNegotiationRequest, ContractNegotiationResponse } from '../types/contract.js';
 
 export class ContractService {
     private readonly baseUrl: string;
@@ -114,5 +114,37 @@ export class ContractService {
         }
 
         throw new Error(`Negotiation did not finalize within ${maxAttempts * delayMs / 1000} seconds`);
+    }
+
+    async getAgreements(): Promise<ContractAgreement[]> {
+        const payload = {
+            '@context': ['https://w3id.org/edc/connector/management/v0.0.1'],
+            '@type': 'QuerySpec'
+        };
+
+        try {
+            const response = await axios.post(
+                `${this.baseUrl}/api/management/v3/contractagreements/request`,
+                payload,
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Api-Key': this.apiKey
+                    }
+                }
+            );
+
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                const axiosError = error as AxiosError;
+                throw new Error(
+                    `Failed to fetch agreements: ${axiosError.message}. ${
+                        axiosError.response?.data ? JSON.stringify(axiosError.response.data) : ''
+                    }`
+                );
+            }
+            throw error;
+        }
     }
 }

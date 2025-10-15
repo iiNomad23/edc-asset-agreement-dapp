@@ -20,3 +20,13 @@ export interface OdrlPolicy {
     'odrl:prohibition': OdrlRule | OdrlRule[];
     'odrl:obligation': OdrlRule | OdrlRule[];
 }
+
+export interface OdrlAgreementPolicy {
+    '@id': string;
+    '@type': string;
+    'odrl:assignee': string;
+    'odrl:assigner': string;
+    'odrl:permission': OdrlRule | OdrlRule[];
+    'odrl:prohibition': OdrlRule | OdrlRule[];
+    'odrl:obligation': OdrlRule | OdrlRule[];
+}
