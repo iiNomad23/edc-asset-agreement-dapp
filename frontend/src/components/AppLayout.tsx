@@ -8,16 +8,17 @@ const AppLayout = (): React.ReactNode => {
     return (
         <SidebarProvider>
             <AppSidebar />
-            <main className="flex-1 overflow-y-auto p-2">
-                <div className="flex flex-col gap-2">
+            <div className="flex-1 flex flex-col h-screen overflow-hidden">
+                <header className="flex-shrink-0 bg-background border-b p-2">
                     <div className="flex justify-between items-center">
                         <SidebarTrigger />
                         <ConnectButton />
                     </div>
-                    <hr />
+                </header>
+                <main className="flex-1 overflow-y-auto p-4">
                     <Outlet />
-                </div>
-            </main>
+                </main>
+            </div>
         </SidebarProvider>
     );
 };
