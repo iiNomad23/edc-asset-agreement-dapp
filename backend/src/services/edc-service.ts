@@ -72,9 +72,4 @@ export class EDCService {
 
         return assets;
     }
-
-    async getAssetById(id: string): Promise<Asset | undefined> {
-        const assets = await this.getAssets();
-        return assets.find(asset => asset.id === id);
-    }
 }
