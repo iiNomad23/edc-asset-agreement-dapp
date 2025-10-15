@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useAccount } from 'wagmi';
 import { Loader2 } from 'lucide-react';
 import CatalogAssetCard from '@/components/CatalogAssetCard.tsx';
 import { CatalogEnvelop } from '@/types';
@@ -8,7 +7,6 @@ import { ContractNegotiationRequest } from '@/types/contract.ts';
 import { OdrlPolicy } from '@/types/policy.ts';
 
 const AssetsPage = (): React.ReactNode => {
-    const { isConnected } = useAccount();
     const [selectedConnector, setSelectedConnector] = useState<string>('');
     const [negotiatingAssetId, setNegotiatingAssetId] = useState<string | null>(null);
 
@@ -21,7 +19,6 @@ const AssetsPage = (): React.ReactNode => {
             }
             return await response.json() as Promise<CatalogEnvelop[]>;
         },
-        enabled: isConnected,
         refetchInterval: 30000,
     });
 
@@ -138,19 +135,6 @@ const AssetsPage = (): React.ReactNode => {
         negotiateMutation.mutate(request);
     };
 
-    if (!isConnected) {
-        return (
-            <div className="flex items-center justify-center p-8">
-                <div className="text-center">
-                    <h2 className="text-2xl font-bold mb-2">Connect Your Wallet</h2>
-                    <p className="text-muted-foreground">
-                        Please connect your wallet to browse available assets
-                    </p>
-                </div>
-            </div>
-        );
-    }
-
     if (isLoading) {
         return (
             <div className="flex items-center justify-center p-8">
@@ -167,8 +151,9 @@ const AssetsPage = (): React.ReactNode => {
         );
     }
 
-    const matchingCatalogs = cachedCatalogEnvelop.flatMap((envelope) =>
-        (envelope['dcat:catalog'] ?? []).filter((catalog) => {
+    const matchingCatalogs = cachedCatalogEnvelop.flatMap((envelope) => {
+        const catalogs = envelope['dcat:catalog'] ?? [];
+        return catalogs.filter((catalog) => {
             const svc = catalog['dcat:service'];
             if (!svc) {
                 return;
@@ -176,8 +161,8 @@ const AssetsPage = (): React.ReactNode => {
 
             const url = svc['dcat:endpointUrl'] ?? svc['dcat:endpointURL'] ?? 'Unknown endpoint';
             return url === selectedConnector;
-        }),
-    );
+        });
+    });
 
     return (
         <div className="grid gap-6">
