@@ -2,10 +2,15 @@
 pragma solidity ^0.8.28;
 
 import {Counter} from "./Counter.sol";
-import {Test} from "forge-std/Test.sol";
+import {CommonBase} from "forge-std/src/Base.sol";
+import {StdAssertions} from "forge-std/src/StdAssertions.sol";
+import {StdChains} from "forge-std/src/StdChains.sol";
+import {StdCheats, StdCheatsSafe} from "forge-std/src/StdCheats.sol";
+import {StdUtils} from "forge-std/src/StdUtils.sol";
+import {Test} from "forge-std/src/Test.sol";
 
 contract CounterTest is Test {
-  Counter counter;
+  Counter private counter;
 
   function setUp() public {
     counter = new Counter();
