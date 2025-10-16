@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import AppLayout from '@/components/AppLayout.tsx';
 import AssetsPage from '@/pages/AssetsPage.tsx';
 import AgreementsPage from '@/pages/AgreementsPage.tsx';
+import MyNFTsPage from '@/pages/MyNFTsPage.tsx';
 
 const router = createBrowserRouter([
     {
@@ -11,6 +12,7 @@ const router = createBrowserRouter([
         children: [
             { path: '/', element: <AssetsPage /> },
             { path: '/agreements', element: <AgreementsPage /> },
+            { path: '/nfts', element: <MyNFTsPage /> },
         ],
     },
 ]);
