@@ -1,12 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { ContractAgreement } from '@/types/contract.ts';
 import AgreementCard from '@/components/ContractAgreementCard.tsx';
 import { useAccount } from 'wagmi';
+import { useEDCAgreementNFT } from '@/hooks/useEDCAgreementNFT.ts';
+import { toast } from 'sonner';
+import { generateAgreementMetadata, metadataToDataURI } from '@/lib/nftMetadata.ts';
 
 const AgreementsPage = (): React.ReactNode => {
-    const { isConnected } = useAccount();
+    const { address, isConnected } = useAccount();
+    const [mintingAgreementId, setMintingAgreementId] = useState<string | null>(null);
+
+    const {
+        mintAgreement,
+        isWritePending,
+        isTxConfirming,
+        isTxConfirmed,
+        writeError,
+    } = useEDCAgreementNFT();
+
     const { data: agreements, isLoading } = useQuery({
         queryKey: ['agreements'],
         queryFn: async () => {
@@ -19,6 +32,51 @@ const AgreementsPage = (): React.ReactNode => {
         refetchInterval: 30000,
     });
 
+    const handleMintNFT = async (agreement: ContractAgreement) => {
+        if (!address) {
+            toast.error('Please connect your wallet first');
+            return;
+        }
+
+        try {
+            setMintingAgreementId(agreement['@id']);
+
+            const metadata = generateAgreementMetadata(agreement, import.meta.env.VITE_DEFAULT_BADGE_IMAGE);
+            const tokenURI = metadataToDataURI(metadata);
+
+            await mintAgreement({
+                recipient: address,
+                agreementId: agreement['@id'],
+                assetId: agreement.assetId,
+                providerId: agreement.providerId,
+                consumerId: agreement.consumerId,
+                signedAt: BigInt(agreement.contractSigningDate),
+                expiresAt: 0n,
+                tokenURI: tokenURI,
+            });
+
+            toast.success('NFT minting successful!');
+        } catch (error) {
+            console.error('Minting error:', error);
+            toast.error('Failed to mint NFT. Please try again.');
+            setMintingAgreementId(null);
+        }
+    };
+
+    React.useEffect(() => {
+        if (isTxConfirmed) {
+            toast.success('NFT minted successfully!');
+            setMintingAgreementId(null);
+        }
+    }, [isTxConfirmed]);
+
+    React.useEffect(() => {
+        if (writeError) {
+            toast.error(`Minting failed: ${writeError.message}`);
+            setMintingAgreementId(null);
+        }
+    }, [writeError]);
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center p-8">
@@ -26,6 +84,10 @@ const AgreementsPage = (): React.ReactNode => {
             </div>
         );
     }
+
+    const isMinting = (agreementId: string) => {
+        return mintingAgreementId === agreementId && (isWritePending || isTxConfirming);
+    };
 
     return (
         <div className="grid gap-6">
@@ -36,6 +98,14 @@ const AgreementsPage = (): React.ReactNode => {
                 </p>
             </div>
 
+            {!isConnected && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p className="text-sm text-yellow-800">
+                        Connect your wallet to mint agreement NFTs
+                    </p>
+                </div>
+            )}
+
             {agreements && agreements.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {agreements.map((agreement) => (
@@ -43,8 +113,8 @@ const AgreementsPage = (): React.ReactNode => {
                             key={agreement['@id']}
                             agreement={agreement}
                             isConnected={isConnected}
-                            isMinting={false}
-                            onMint={() => console.log(agreement)}
+                            isMinting={isMinting(agreement['@id'])}
+                            onMint={() => handleMintNFT(agreement)}
                         />
                     ))}
                 </div>
