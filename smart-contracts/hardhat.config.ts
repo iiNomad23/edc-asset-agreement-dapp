@@ -9,13 +9,20 @@ const config: HardhatUserConfig = {
     profiles: {
       default: {
         version: "0.8.28",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 100,
+          },
+          viaIR: true,
+        },
       },
       production: {
         version: "0.8.28",
         settings: {
           optimizer: {
             enabled: true,
-            runs: 200,
+            runs: 1000,
           },
         },
       },
@@ -48,7 +55,10 @@ const config: HardhatUserConfig = {
     etherscan: {
       apiKey: configVariable("ETHERSCAN_API_KEY"),
     },
-  }
+  },
+  paths: {
+    artifacts: './artifacts',
+  },
 };
 
 export default config;

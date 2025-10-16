@@ -11,6 +11,7 @@
     "start-local-node": "npx hardhat node",
     "clean-contracts": "npx hardhat clean",
     "compile-contracts": "npx hardhat compile",
+    "deploy-default-nft-contract": "npx hardhat ignition deploy ignition/modules/EDCAgreementNFT.ts --network localhost",
     "maintenance:ncu:install": "npm install -g npm-check-updates",
     "maintenance:ncu": "ncu --enginesNode",
     "maintenance:ncu:u": "npm run maintenance:ncu -- --upgrade",
