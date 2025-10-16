@@ -14,6 +14,7 @@ import { Link, useLocation } from 'react-router-dom';
 const items = [
     { title: "Assets", url: "/", icon: Coins },
     { title: "Agreements", url: "/agreements", icon: FileText },
+    { title: "My NFTs", url: "/nfts", icon: FileText },
 ];
 
 function isActivePath(pathname: string, url: string) {

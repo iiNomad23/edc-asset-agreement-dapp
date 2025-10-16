@@ -1,7 +1,9 @@
 import React from 'react';
 import { ContractAgreement } from '@/types/contract.ts';
-import { Loader2 } from 'lucide-react';
+import { FileText, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button.tsx';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.tsx';
+import { formatTimestamp } from '@/lib/utils.ts';
 
 interface AgreementCardProps {
     agreement: ContractAgreement;
@@ -11,64 +13,68 @@ interface AgreementCardProps {
 }
 
 const AgreementCard: React.FC<AgreementCardProps> = ({ agreement, isConnected, isMinting, onMint }) => {
-    const signingDate = new Date(agreement.contractSigningDate * 1000);
-    const formattedDate = signingDate.toLocaleDateString(window.navigator.language, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
+    const formattedDate = formatTimestamp(agreement.contractSigningDate * 1000);
 
     return (
-        <div className="border rounded-lg p-4 space-y-3">
-            <div className="space-y-2">
-                <div>
-                    <h3 className="font-semibold text-lg">Agreement</h3>
-                    <p className="text-sm text-muted-foreground font-mono truncate">
-                        {agreement['@id']}
-                    </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                        <span className="text-muted-foreground">Asset ID:</span>
-                        <p className="font-mono truncate">{agreement.assetId}</p>
-                    </div>
-                    <div>
-                        <span className="text-muted-foreground">Signed:</span>
-                        <p>{formattedDate}</p>
+        <Card className="flex flex-col h-full">
+            <CardHeader>
+                <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                            <FileText className="w-5 h-5 text-blue-500" />
+                            Agreement
+                        </CardTitle>
+                        <CardDescription className="mt-1">
+                            <p className="text-muted-foreground break-all">
+                                {agreement['@id']}
+                            </p>
+                        </CardDescription>
                     </div>
                 </div>
-
-                <div className="text-sm space-y-1">
-                    <div>
-                        <span className="text-muted-foreground">Provider:</span>
-                        <p className="font-mono truncate">{agreement.providerId}</p>
+            </CardHeader>
+            <CardContent className="space-y-4 flex-1 flex flex-col justify-end">
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p className="text-muted-foreground mb-1">Asset ID</p>
+                            <p className="font-mono text-xs break-all">{agreement.assetId}</p>
+                        </div>
+                        <div>
+                            <p className="text-muted-foreground mb-1">Signed At</p>
+                            <p className="text-xs">{formattedDate}</p>
+                        </div>
                     </div>
-                    <div>
-                        <span className="text-muted-foreground">Consumer:</span>
-                        <p className="font-mono truncate">{agreement.consumerId}</p>
+
+                    <div className="space-y-2 text-sm">
+                        <div>
+                            <p className="text-muted-foreground mb-1">Provider</p>
+                            <p className="font-mono text-xs break-all">{agreement.providerId}</p>
+                        </div>
+                        <div>
+                            <p className="text-muted-foreground mb-1">Consumer</p>
+                            <p className="font-mono text-xs break-all">{agreement.consumerId}</p>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <Button
-                onClick={onMint}
-                disabled={!isConnected || isMinting}
-                className="w-full"
-                size="sm"
-            >
-                {isMinting ? (
-                    <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Minting NFT...
-                    </>
-                ) : (
-                    'Mint contract agreement NFT'
-                )}
-            </Button>
-        </div>
+                <Button
+                    onClick={onMint}
+                    disabled={!isConnected || isMinting}
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                >
+                    {isMinting ? (
+                        <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Minting NFT...
+                        </>
+                    ) : (
+                        'Mint contract agreement NFT'
+                    )}
+                </Button>
+            </CardContent>
+        </Card>
     );
 };
 
