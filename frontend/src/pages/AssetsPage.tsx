@@ -5,6 +5,7 @@ import CatalogAssetCard from '@/components/CatalogAssetCard.tsx';
 import { CatalogEnvelop } from '@/types';
 import { ContractNegotiationRequest } from '@/types/contract.ts';
 import { OdrlPolicy } from '@/types/policy.ts';
+import { toast } from 'sonner';
 
 const AssetsPage = (): React.ReactNode => {
     const [selectedConnector, setSelectedConnector] = useState<string>('');
@@ -52,17 +53,26 @@ const AssetsPage = (): React.ReactNode => {
                     throw new Error(result.message);
                 }
 
-                alert(`Contract negotiated successfully! Agreement ID: ${result.contractAgreementId}`);
+                toast.success('Contract Negotiated Successfully', {
+                    description: `Agreement ID: ${result.contractAgreementId}`,
+                    duration: 5000,
+                });
             } catch (error) {
                 console.error(error);
-                alert(`Negotiation initiated but failed to complete.\n${error}`);
+                toast.error('Negotiation Failed', {
+                    description: error instanceof Error ? error.message : 'Negotiation initiated but failed to complete',
+                    duration: 5000,
+                })
             } finally {
                 setNegotiatingAssetId(null);
             }
         },
         onError: (error: Error) => {
             console.error('Negotiation error:', error);
-            alert(`Failed to negotiate contract: ${error.message}`);
+            toast.error('Contract Negotiation Failed', {
+                description: error.message,
+                duration: 5000,
+            });
             setNegotiatingAssetId(null);
         },
     });
@@ -119,7 +129,9 @@ const AssetsPage = (): React.ReactNode => {
         });
 
         if (!selectedConnectorCachedCatalogEnvelop) {
-            alert('Failed to determine participant id of selected connector');
+            toast.error('Failed to determine participant id of selected connector', {
+                duration: 5000,
+            });
             setNegotiatingAssetId(null);
             return;
         }
@@ -213,7 +225,9 @@ const AssetsPage = (): React.ReactNode => {
                                                     if (policyId) {
                                                         handleSubscribe(assetId, policy, selectedConnector);
                                                     } else {
-                                                        alert('Asset policy information is missing');
+                                                        toast.error('Asset policy information is missing', {
+                                                            duration: 5000,
+                                                        });
                                                     }
                                                 }}
                                             />
