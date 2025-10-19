@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {EDCAgreementNFT} from "./EDCAgreementNFT.sol";
+import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {CommonBase} from "forge-std/src/Base.sol";
 import {StdAssertions} from "forge-std/src/StdAssertions.sol";
@@ -26,7 +27,7 @@ contract EDCAgreementNFTTest is Test {
 
     function testDeployment() public view {
         assertEq(nft.name(), "EDC Agreement NFT");
-        assertEq(nft.symbol(), "EDC_AGR_TEST");
+        assertEq(nft.symbol(), "EDC_AGR");
         assertEq(nft.owner(), owner);
         assertEq(nft.totalSupply(), 0);
     }
@@ -119,23 +120,81 @@ contract EDCAgreementNFTTest is Test {
     }
 
     function testGasMeasurement() public {
-        string memory tokenURI = string(abi.encodePacked(
-            "data:application/json;utf8,",
-            '{"name":"Gas Test","image":"',
-            FIXED_BADGE_URL,
-            '"}'
-        ));
+        string memory agreementId = "eb2f88d5-cd15-4b19-b1b2-75e92e8ed8be";
+        string memory assetId = "asset-3";
+        string memory providerId = "did:web:10.0.40.172%3A7083:provider";
+        string memory consumerId = "did:web:10.0.40.171%3A7083:consumer";
+        uint256 signedAt = block.timestamp;
+
+        string memory fullAgreement = string(
+            abi.encodePacked(
+                '{"@type":"ContractAgreement",',
+                '"@id":"', agreementId, '",',
+                '"assetId":"', assetId, '",',
+                '"policy":{',
+                '"@id":"820ae012-e76b-48c7-a11a-0b27cc3b0fef",',
+                '"@type":"odrl:Agreement",',
+                '"odrl:permission":[],',
+                '"odrl:prohibition":[],',
+                '"odrl:obligation":{',
+                '"odrl:action":{"@id":"odrl:use"},',
+                '"odrl:constraint":{',
+                '"odrl:leftOperand":{"@id":"DataAccess.level"},',
+                '"odrl:operator":{"@id":"odrl:eq"},',
+                '"odrl:rightOperand":"processing"',
+                '}',
+                '},',
+                '"odrl:assignee":"', consumerId, '",',
+                '"odrl:assigner":"', providerId, '",',
+                '"odrl:target":{"@id":"', assetId, '"}',
+                '},',
+                '"contractSigningDate":', Strings.toString(signedAt), ',',
+                '"consumerId":"', consumerId, '",',
+                '"providerId":"', providerId, '",',
+                '"@context":{',
+                '"@vocab":"https://w3id.org/edc/v0.0.1/ns/",',
+                '"edc":"https://w3id.org/edc/v0.0.1/ns/",',
+                '"odrl":"http://www.w3.org/ns/odrl/2/"',
+                '}',
+                '}'
+            )
+        );
+
+        string memory metadata = string(
+            abi.encodePacked(
+                '{"name":"EDC Agreement #', agreementId,
+                '","description":"Access token for asset ', assetId,
+                ' under negotiated policy.","external_url":"http://localhost:5173/agreements/',
+                agreementId,
+                '","image":"', FIXED_BADGE_URL,
+                '","attributes":[',
+                '{"trait_type":"Agreement ID","value":"', agreementId, '"},',
+                '{"trait_type":"Asset ID","value":"', assetId, '"},',
+                '{"trait_type":"Provider ID","value":"', providerId, '"},',
+                '{"trait_type":"Consumer ID","value":"', consumerId, '"},',
+                '{"trait_type":"Signed At","value":"', Strings.toString(signedAt), '"}',
+                '],',
+                '"full_agreement":', fullAgreement,
+                '}'
+            )
+        );
+
+        // Encode metadata as base64 data URI
+        string memory base64JSON = Base64.encode(bytes(metadata));
+        string memory tokenURI = string(
+            abi.encodePacked("data:application/json;base64,", base64JSON)
+        );
 
         uint256 gasBefore = gasleft();
 
         vm.prank(owner);
         nft.mintAgreement(
             user1,
-            "gas-test",
-            "asset",
-            "provider",
-            "consumer",
-            block.timestamp,
+            agreementId,
+            assetId,
+            providerId,
+            consumerId,
+            signedAt,
             0,
             tokenURI
         );
@@ -144,8 +203,39 @@ contract EDCAgreementNFTTest is Test {
 
         emit log_named_uint("Gas used for minting (Full Storage + Data URI)", gasUsed);
 
+        // Full storage should use ~2M gas
+        assertLt(gasUsed, 2000000, "Gas usage should be lower than 2M");
+    }
+
+    function testGasMeasurementWithIPFS() public {
+        string memory agreementId = "eb2f88d5-cd15-4b19-b1b2-75e92e8ed8bf";
+        string memory assetId = "asset-3";
+        string memory providerId = "did:web:10.0.40.172%3A7083:provider";
+        string memory consumerId = "did:web:10.0.40.171%3A7083:consumer";
+        uint256 signedAt = block.timestamp;
+
+        string memory tokenURI = "https://ipfs.io/ipfs/QmTestMetadataHash123456789";
+
+        uint256 gasBefore = gasleft();
+
+        vm.prank(owner);
+        nft.mintAgreement(
+            user1,
+            agreementId,
+            assetId,
+            providerId,
+            consumerId,
+            signedAt,
+            0,
+            tokenURI
+        );
+
+        uint256 gasUsed = gasBefore - gasleft();
+
+        emit log_named_uint("Gas used for minting (IPFS)", gasUsed);
+
         // Full storage should use ~500k gas
-        assertLt(gasUsed, 1000000, "Gas usage should be under 500k");
+        assertLt(gasUsed, 500000, "Gas usage should be lower than 2M");
     }
 
     function testRevokeAgreement() public {
@@ -340,5 +430,164 @@ contract EDCAgreementNFTTest is Test {
         );
 
         assertEq(nft.ownerOf(tokenId), recipient);
+    }
+
+    function testRevertInvalidRecipientAddress() public {
+        string memory tokenURI = "data:application/json;utf8,{\"name\":\"Invalid Recipient\"}";
+
+        vm.expectRevert(abi.encodeWithSelector(EDCAgreementNFT.InvalidRecipientAddress.selector));
+
+        vm.prank(owner);
+        nft.mintAgreement(
+            address(0),
+            "urn:uuid:invalid-recipient",
+            "urn:asset:test",
+            "provider",
+            "consumer",
+            block.timestamp,
+            0,
+            tokenURI
+        );
+    }
+
+    function testRevertEmptyAgreementId() public {
+        string memory tokenURI = "data:application/json;utf8,{\"name\":\"Empty Agreement\"}";
+
+        vm.expectRevert(abi.encodeWithSelector(EDCAgreementNFT.AgreementIdRequired.selector));
+
+        vm.prank(owner);
+        nft.mintAgreement(
+            user1,
+            "",
+            "urn:asset:test",
+            "provider",
+            "consumer",
+            block.timestamp,
+            0,
+            tokenURI
+        );
+    }
+
+    function testRevertEmptyAssetId() public {
+        string memory tokenURI = "data:application/json;utf8,{\"name\":\"Empty Asset\"}";
+
+        vm.expectRevert(abi.encodeWithSelector(EDCAgreementNFT.AssetIdRequired.selector));
+
+        vm.prank(owner);
+        nft.mintAgreement(
+            user1,
+            "urn:uuid:empty-asset",
+            "",
+            "provider",
+            "consumer",
+            block.timestamp,
+            0,
+            tokenURI
+        );
+    }
+
+    function testRevertAgreementAlreadyMinted() public {
+        string memory tokenURI = "data:application/json;utf8,{\"name\":\"Duplicate Agreement\"}";
+
+        vm.startPrank(owner);
+        nft.mintAgreement(
+            user1,
+            "urn:uuid:duplicate",
+            "urn:asset:duplicate",
+            "provider",
+            "consumer",
+            block.timestamp,
+            0,
+            tokenURI
+        );
+
+        vm.expectRevert(abi.encodeWithSelector(EDCAgreementNFT.AgreementAlreadyMinted.selector));
+        nft.mintAgreement(
+            user2,
+            "urn:uuid:duplicate",
+            "urn:asset:duplicate2",
+            "provider",
+            "consumer",
+            block.timestamp,
+            0,
+            tokenURI
+        );
+        vm.stopPrank();
+    }
+
+    function testRevertInvalidSigningTimestamp() public {
+        string memory tokenURI = "data:application/json;utf8,{\"name\":\"Future Timestamp\"}";
+
+        vm.expectRevert(abi.encodeWithSelector(EDCAgreementNFT.InvalidSigningTimestamp.selector));
+
+        vm.prank(owner);
+        nft.mintAgreement(
+            user1,
+            "urn:uuid:future-timestamp",
+            "urn:asset:future",
+            "provider",
+            "consumer",
+            block.timestamp + 1 days,
+            0,
+            tokenURI
+        );
+    }
+
+    function testRevertTokenDoesNotExist_GetAgreement() public {
+        vm.expectRevert(abi.encodeWithSelector(EDCAgreementNFT.TokenDoesNotExist.selector));
+        nft.getAgreement(999);
+    }
+
+    function testRevertAgreementNotFound() public {
+        vm.expectRevert(abi.encodeWithSelector(EDCAgreementNFT.AgreementNotFound.selector));
+        nft.getTokenIdByAgreementId("urn:uuid:does-not-exist");
+    }
+
+    function testRevertNotAuthorizedToRevoke() public {
+        string memory tokenURI = "data:application/json;utf8,{\"name\":\"Unauthorized Revoke\"}";
+
+        vm.prank(owner);
+        uint256 tokenId = nft.mintAgreement(
+            user1,
+            "urn:uuid:unauthorized",
+            "urn:asset:test",
+            "provider",
+            "consumer",
+            block.timestamp,
+            0,
+            tokenURI
+        );
+
+        vm.expectRevert(abi.encodeWithSelector(EDCAgreementNFT.NotAuthorizedToRevoke.selector));
+        vm.prank(user2);
+        nft.revokeAgreement(tokenId, "Not your token");
+    }
+
+    function testRevertAgreementAlreadyRevoked() public {
+        string memory tokenURI = "data:application/json;utf8,{\"name\":\"Already Revoked\"}";
+
+        vm.prank(owner);
+        uint256 tokenId = nft.mintAgreement(
+            user1,
+            "urn:uuid:already-revoked",
+            "urn:asset:test",
+            "provider",
+            "consumer",
+            block.timestamp,
+            0,
+            tokenURI
+        );
+
+        vm.prank(user1);
+        nft.revokeAgreement(tokenId, "First revoke");
+
+        vm.expectRevert(abi.encodeWithSelector(EDCAgreementNFT.AgreementAlreadyRevoked.selector));
+        vm.prank(user1);
+        nft.revokeAgreement(tokenId, "Second revoke");
+    }
+
+    function testRevertRevokeNonexistentToken() public {
+        vm.expectRevert(abi.encodeWithSelector(EDCAgreementNFT.TokenDoesNotExist.selector));
+        nft.revokeAgreement(12345, "No token");
     }
 }

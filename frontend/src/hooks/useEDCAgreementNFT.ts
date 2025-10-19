@@ -45,13 +45,9 @@ export function useEDCAgreementNFT() {
         writeContractAsync,
         data: hash,
         isPending: isWritePending,
-        error: writeError,
     } = useWriteContract();
 
-    const {
-        isLoading: isTxConfirming,
-        isSuccess: isTxConfirmed,
-    } = useWaitForTransactionReceipt({ hash });
+    const { isLoading: isTxConfirming } = useWaitForTransactionReceipt({ hash });
 
     const mintAgreement = (params: MintAgreementParams) => {
         return writeContractAsync({
@@ -68,6 +64,7 @@ export function useEDCAgreementNFT() {
                 params.expiresAt,
                 params.tokenURI,
             ],
+            gas: 2_000_000n,
         });
     };
 
@@ -85,8 +82,6 @@ export function useEDCAgreementNFT() {
         revokeAgreement,
         isWritePending,
         isTxConfirming,
-        isTxConfirmed,
-        writeError,
         hash,
     };
 }

@@ -7,6 +7,31 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
         'type': 'constructor',
     },
     {
+        'inputs': [],
+        'name': 'AgreementAlreadyMinted',
+        'type': 'error',
+    },
+    {
+        'inputs': [],
+        'name': 'AgreementAlreadyRevoked',
+        'type': 'error',
+    },
+    {
+        'inputs': [],
+        'name': 'AgreementIdRequired',
+        'type': 'error',
+    },
+    {
+        'inputs': [],
+        'name': 'AgreementNotFound',
+        'type': 'error',
+    },
+    {
+        'inputs': [],
+        'name': 'AssetIdRequired',
+        'type': 'error',
+    },
+    {
         'inputs': [
             {
                 'internalType': 'address',
@@ -49,7 +74,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'address',
                 'name': 'approver',
                 'type': 'address',
-            },
+            }
         ],
         'name': 'ERC721InvalidApprover',
         'type': 'error',
@@ -60,7 +85,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'address',
                 'name': 'operator',
                 'type': 'address',
-            },
+            }
         ],
         'name': 'ERC721InvalidOperator',
         'type': 'error',
@@ -71,7 +96,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'address',
                 'name': 'owner',
                 'type': 'address',
-            },
+            }
         ],
         'name': 'ERC721InvalidOwner',
         'type': 'error',
@@ -82,7 +107,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'address',
                 'name': 'receiver',
                 'type': 'address',
-            },
+            }
         ],
         'name': 'ERC721InvalidReceiver',
         'type': 'error',
@@ -93,7 +118,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'address',
                 'name': 'sender',
                 'type': 'address',
-            },
+            }
         ],
         'name': 'ERC721InvalidSender',
         'type': 'error',
@@ -110,12 +135,27 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
         'type': 'error',
     },
     {
+        'inputs': [],
+        'name': 'InvalidRecipientAddress',
+        'type': 'error',
+    },
+    {
+        'inputs': [],
+        'name': 'InvalidSigningTimestamp',
+        'type': 'error',
+    },
+    {
+        'inputs': [],
+        'name': 'NotAuthorizedToRevoke',
+        'type': 'error',
+    },
+    {
         'inputs': [
             {
                 'internalType': 'address',
                 'name': 'owner',
                 'type': 'address',
-            },
+            }
         ],
         'name': 'OwnableInvalidOwner',
         'type': 'error',
@@ -129,6 +169,11 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
             },
         ],
         'name': 'OwnableUnauthorizedAccount',
+        'type': 'error',
+    },
+    {
+        'inputs': [],
+        'name': 'TokenDoesNotExist',
         'type': 'error',
     },
     {
@@ -218,7 +263,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'string',
                 'name': 'reason',
                 'type': 'string',
-            },
+            }
         ],
         'name': 'AgreementRevoked',
         'type': 'event',
@@ -249,7 +294,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'address',
                 'name': 'to',
                 'type': 'address',
-            },
+            }
         ],
         'name': 'AgreementTransferred',
         'type': 'event',
@@ -274,7 +319,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': 'tokenId',
                 'type': 'uint256',
-            },
+            }
         ],
         'name': 'Approval',
         'type': 'event',
@@ -299,7 +344,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'bool',
                 'name': 'approved',
                 'type': 'bool',
-            },
+            }
         ],
         'name': 'ApprovalForAll',
         'type': 'event',
@@ -318,7 +363,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': '_toTokenId',
                 'type': 'uint256',
-            },
+            }
         ],
         'name': 'BatchMetadataUpdate',
         'type': 'event',
@@ -331,7 +376,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': '_tokenId',
                 'type': 'uint256',
-            },
+            }
         ],
         'name': 'MetadataUpdate',
         'type': 'event',
@@ -350,7 +395,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'address',
                 'name': 'newOwner',
                 'type': 'address',
-            },
+            }
         ],
         'name': 'OwnershipTransferred',
         'type': 'event',
@@ -375,7 +420,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': 'tokenId',
                 'type': 'uint256',
-            },
+            }
         ],
         'name': 'Transfer',
         'type': 'event',
@@ -386,7 +431,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'string',
                 'name': '',
                 'type': 'string',
-            },
+            }
         ],
         'name': 'agreementIdToTokenId',
         'outputs': [
@@ -394,7 +439,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': '',
                 'type': 'uint256',
-            },
+            }
         ],
         'stateMutability': 'view',
         'type': 'function',
@@ -405,7 +450,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': '',
                 'type': 'uint256',
-            },
+            }
         ],
         'name': 'agreements',
         'outputs': [
@@ -453,7 +498,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'string',
                 'name': 'revokeReason',
                 'type': 'string',
-            },
+            }
         ],
         'stateMutability': 'view',
         'type': 'function',
@@ -469,7 +514,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': 'tokenId',
                 'type': 'uint256',
-            },
+            }
         ],
         'name': 'approve',
         'outputs': [],
@@ -482,7 +527,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'address',
                 'name': 'owner',
                 'type': 'address',
-            },
+            }
         ],
         'name': 'balanceOf',
         'outputs': [
@@ -490,7 +535,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': '',
                 'type': 'uint256',
-            },
+            }
         ],
         'stateMutability': 'view',
         'type': 'function',
@@ -501,7 +546,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': 'tokenId',
                 'type': 'uint256',
-            },
+            }
         ],
         'name': 'getAgreement',
         'outputs': [
@@ -551,12 +596,12 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                         'internalType': 'string',
                         'name': 'revokeReason',
                         'type': 'string',
-                    },
+                    }
                 ],
                 'internalType': 'struct EDCAgreementNFT.AgreementMetadata',
                 'name': '',
                 'type': 'tuple',
-            },
+            }
         ],
         'stateMutability': 'view',
         'type': 'function',
@@ -567,7 +612,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': 'tokenId',
                 'type': 'uint256',
-            },
+            }
         ],
         'name': 'getApproved',
         'outputs': [
@@ -575,7 +620,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'address',
                 'name': '',
                 'type': 'address',
-            },
+            }
         ],
         'stateMutability': 'view',
         'type': 'function',
@@ -586,7 +631,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'string',
                 'name': 'agreementId',
                 'type': 'string',
-            },
+            }
         ],
         'name': 'getTokenIdByAgreementId',
         'outputs': [
@@ -594,7 +639,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': '',
                 'type': 'uint256',
-            },
+            }
         ],
         'stateMutability': 'view',
         'type': 'function',
@@ -610,7 +655,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'address',
                 'name': 'operator',
                 'type': 'address',
-            },
+            }
         ],
         'name': 'isApprovedForAll',
         'outputs': [
@@ -618,7 +663,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'bool',
                 'name': '',
                 'type': 'bool',
-            },
+            }
         ],
         'stateMutability': 'view',
         'type': 'function',
@@ -629,7 +674,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': 'tokenId',
                 'type': 'uint256',
-            },
+            }
         ],
         'name': 'isExpired',
         'outputs': [
@@ -637,7 +682,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'bool',
                 'name': '',
                 'type': 'bool',
-            },
+            }
         ],
         'stateMutability': 'view',
         'type': 'function',
@@ -648,7 +693,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': 'tokenId',
                 'type': 'uint256',
-            },
+            }
         ],
         'name': 'isValidAgreement',
         'outputs': [
@@ -656,7 +701,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'bool',
                 'name': '',
                 'type': 'bool',
-            },
+            }
         ],
         'stateMutability': 'view',
         'type': 'function',
@@ -702,7 +747,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'string',
                 'name': '_tokenURI',
                 'type': 'string',
-            },
+            }
         ],
         'name': 'mintAgreement',
         'outputs': [
@@ -710,7 +755,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': '',
                 'type': 'uint256',
-            },
+            }
         ],
         'stateMutability': 'nonpayable',
         'type': 'function',
@@ -723,7 +768,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'string',
                 'name': '',
                 'type': 'string',
-            },
+            }
         ],
         'stateMutability': 'view',
         'type': 'function',
@@ -736,7 +781,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'address',
                 'name': '',
                 'type': 'address',
-            },
+            }
         ],
         'stateMutability': 'view',
         'type': 'function',
@@ -747,7 +792,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': 'tokenId',
                 'type': 'uint256',
-            },
+            }
         ],
         'name': 'ownerOf',
         'outputs': [
@@ -755,7 +800,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'address',
                 'name': '',
                 'type': 'address',
-            },
+            }
         ],
         'stateMutability': 'view',
         'type': 'function',
@@ -778,7 +823,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'string',
                 'name': 'reason',
                 'type': 'string',
-            },
+            }
         ],
         'name': 'revokeAgreement',
         'outputs': [],
@@ -791,7 +836,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'string',
                 'name': '',
                 'type': 'string',
-            },
+            }
         ],
         'name': 'revokedAgreements',
         'outputs': [
@@ -799,7 +844,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'bool',
                 'name': '',
                 'type': 'bool',
-            },
+            }
         ],
         'stateMutability': 'view',
         'type': 'function',
@@ -820,7 +865,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': 'tokenId',
                 'type': 'uint256',
-            },
+            }
         ],
         'name': 'safeTransferFrom',
         'outputs': [],
@@ -848,7 +893,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'bytes',
                 'name': 'data',
                 'type': 'bytes',
-            },
+            }
         ],
         'name': 'safeTransferFrom',
         'outputs': [],
@@ -866,7 +911,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'bool',
                 'name': 'approved',
                 'type': 'bool',
-            },
+            }
         ],
         'name': 'setApprovalForAll',
         'outputs': [],
@@ -879,7 +924,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'bytes4',
                 'name': 'interfaceId',
                 'type': 'bytes4',
-            },
+            }
         ],
         'name': 'supportsInterface',
         'outputs': [
@@ -887,7 +932,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'bool',
                 'name': '',
                 'type': 'bool',
-            },
+            }
         ],
         'stateMutability': 'view',
         'type': 'function',
@@ -900,7 +945,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'string',
                 'name': '',
                 'type': 'string',
-            },
+            }
         ],
         'stateMutability': 'view',
         'type': 'function',
@@ -911,7 +956,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': 'tokenId',
                 'type': 'uint256',
-            },
+            }
         ],
         'name': 'tokenURI',
         'outputs': [
@@ -919,7 +964,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'string',
                 'name': '',
                 'type': 'string',
-            },
+            }
         ],
         'stateMutability': 'view',
         'type': 'function',
@@ -930,7 +975,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'address',
                 'name': 'owner',
                 'type': 'address',
-            },
+            }
         ],
         'name': 'tokensOfOwner',
         'outputs': [
@@ -938,7 +983,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256[]',
                 'name': '',
                 'type': 'uint256[]',
-            },
+            }
         ],
         'stateMutability': 'view',
         'type': 'function',
@@ -951,7 +996,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': '',
                 'type': 'uint256',
-            },
+            }
         ],
         'stateMutability': 'view',
         'type': 'function',
@@ -972,7 +1017,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': 'tokenId',
                 'type': 'uint256',
-            },
+            }
         ],
         'name': 'transferFrom',
         'outputs': [],
@@ -985,11 +1030,11 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'address',
                 'name': 'newOwner',
                 'type': 'address',
-            },
+            }
         ],
         'name': 'transferOwnership',
         'outputs': [],
         'stateMutability': 'nonpayable',
         'type': 'function',
-    },
+    }
 ] as const;

@@ -9,6 +9,7 @@ export interface NFTMetadata {
         trait_type: string;
         value: string | number;
     }>;
+    full_agreement: ContractAgreement
 }
 
 export function generateAgreementMetadata(
@@ -16,9 +17,9 @@ export function generateAgreementMetadata(
     imageUrl: string
 ): NFTMetadata {
     return {
-        name: `EDC Agreement #${agreement['@id'].split(':').pop() || agreement['@id']}`,
+        name: `EDC Agreement #${agreement['@id']}`,
         description: `Access token for asset ${agreement.assetId} under negotiated policy.`,
-        external_url: `${window.location.origin}/agreements/${agreement['@id']}`,
+        external_url: `https://github.com/eclipse-edc`,
         image: imageUrl,
         attributes: [
             {
@@ -42,6 +43,7 @@ export function generateAgreementMetadata(
                 value: agreement.consumerId,
             },
         ],
+        full_agreement: agreement,
     };
 }
 
