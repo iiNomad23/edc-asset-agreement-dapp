@@ -7,6 +7,7 @@ import { useAccount } from 'wagmi';
 import { useEDCAgreementNFT } from '@/hooks/useEDCAgreementNFT.ts';
 import { toast } from 'sonner';
 import { generateAgreementMetadata, metadataToDataURI } from '@/lib/nftMetadata.ts';
+import { BaseError, ContractFunctionRevertedError } from 'viem';
 
 const AgreementsPage = (): React.ReactNode => {
     const { address, isConnected } = useAccount();
@@ -16,8 +17,6 @@ const AgreementsPage = (): React.ReactNode => {
         mintAgreement,
         isWritePending,
         isTxConfirming,
-        isTxConfirmed,
-        writeError,
     } = useEDCAgreementNFT();
 
     const { data: agreements, isLoading } = useQuery({
@@ -31,6 +30,50 @@ const AgreementsPage = (): React.ReactNode => {
         },
         refetchInterval: 30000,
     });
+
+    const parseContractError = (error: unknown): string => {
+        if (error instanceof BaseError) {
+            const revertError = error.walk(err => err instanceof ContractFunctionRevertedError);
+            if (revertError instanceof ContractFunctionRevertedError) {
+                const errorName = revertError.data?.errorName;
+
+                switch (errorName) {
+                    case 'AgreementAlreadyMinted':
+                        return 'This agreement has already been minted as an NFT';
+                    case 'InvalidRecipientAddress':
+                        return 'Invalid recipient address';
+                    case 'AgreementIdRequired':
+                        return 'Agreement ID is required';
+                    case 'AssetIdRequired':
+                        return 'Asset ID is required';
+                    case 'InvalidSigningTimestamp':
+                        return 'Invalid signing timestamp';
+                    case 'TokenDoesNotExist':
+                        return 'Token does not exist';
+                    case 'NotAuthorizedToRevoke':
+                        return 'Not authorized to revoke this agreement';
+                    case 'AgreementAlreadyRevoked':
+                        return 'Agreement is already revoked';
+                    case 'AgreementNotFound':
+                        return 'Agreement not found';
+                    default:
+                        if (revertError.reason) {
+                            return revertError.reason;
+                        }
+                }
+            }
+
+            if (error.shortMessage) {
+                return error.shortMessage;
+            }
+        }
+
+        if (error instanceof Error) {
+            return error.message;
+        }
+
+        return 'An unknown error occurred';
+    };
 
     const handleMintNFT = async (agreement: ContractAgreement) => {
         if (!address) {
@@ -57,25 +100,11 @@ const AgreementsPage = (): React.ReactNode => {
 
             toast.success('NFT minting successful!');
         } catch (error) {
-            console.error('Minting error:', error);
-            toast.error('Failed to mint NFT. Please try again.');
+            const errorMessage = parseContractError(error);
+            toast.error(errorMessage);
             setMintingAgreementId(null);
         }
     };
-
-    React.useEffect(() => {
-        if (isTxConfirmed) {
-            toast.success('NFT minted successfully!');
-            setMintingAgreementId(null);
-        }
-    }, [isTxConfirmed]);
-
-    React.useEffect(() => {
-        if (writeError) {
-            toast.error(`Minting failed: ${writeError.message}`);
-            setMintingAgreementId(null);
-        }
-    }, [writeError]);
 
     if (isLoading) {
         return (
