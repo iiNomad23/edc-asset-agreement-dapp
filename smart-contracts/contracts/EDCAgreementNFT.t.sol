@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {EDCAgreementNFT} from "./EDCAgreementNFT.sol";
+import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {CommonBase} from "forge-std/src/Base.sol";
 import {StdAssertions} from "forge-std/src/StdAssertions.sol";
@@ -26,7 +27,7 @@ contract EDCAgreementNFTTest is Test {
 
     function testDeployment() public view {
         assertEq(nft.name(), "EDC Agreement NFT");
-        assertEq(nft.symbol(), "EDC_AGR_TEST");
+        assertEq(nft.symbol(), "EDC_AGR");
         assertEq(nft.owner(), owner);
         assertEq(nft.totalSupply(), 0);
     }
@@ -119,23 +120,81 @@ contract EDCAgreementNFTTest is Test {
     }
 
     function testGasMeasurement() public {
-        string memory tokenURI = string(abi.encodePacked(
-            "data:application/json;utf8,",
-            '{"name":"Gas Test","image":"',
-            FIXED_BADGE_URL,
-            '"}'
-        ));
+        string memory agreementId = "eb2f88d5-cd15-4b19-b1b2-75e92e8ed8be";
+        string memory assetId = "asset-3";
+        string memory providerId = "did:web:10.0.40.172%3A7083:provider";
+        string memory consumerId = "did:web:10.0.40.171%3A7083:consumer";
+        uint256 signedAt = block.timestamp;
+
+        string memory fullAgreement = string(
+            abi.encodePacked(
+                '{"@type":"ContractAgreement",',
+                '"@id":"', agreementId, '",',
+                '"assetId":"', assetId, '",',
+                '"policy":{',
+                '"@id":"820ae012-e76b-48c7-a11a-0b27cc3b0fef",',
+                '"@type":"odrl:Agreement",',
+                '"odrl:permission":[],',
+                '"odrl:prohibition":[],',
+                '"odrl:obligation":{',
+                '"odrl:action":{"@id":"odrl:use"},',
+                '"odrl:constraint":{',
+                '"odrl:leftOperand":{"@id":"DataAccess.level"},',
+                '"odrl:operator":{"@id":"odrl:eq"},',
+                '"odrl:rightOperand":"processing"',
+                '}',
+                '},',
+                '"odrl:assignee":"', consumerId, '",',
+                '"odrl:assigner":"', providerId, '",',
+                '"odrl:target":{"@id":"', assetId, '"}',
+                '},',
+                '"contractSigningDate":', Strings.toString(signedAt), ',',
+                '"consumerId":"', consumerId, '",',
+                '"providerId":"', providerId, '",',
+                '"@context":{',
+                '"@vocab":"https://w3id.org/edc/v0.0.1/ns/",',
+                '"edc":"https://w3id.org/edc/v0.0.1/ns/",',
+                '"odrl":"http://www.w3.org/ns/odrl/2/"',
+                '}',
+                '}'
+            )
+        );
+
+        string memory metadata = string(
+            abi.encodePacked(
+                '{"name":"EDC Agreement #', agreementId,
+                '","description":"Access token for asset ', assetId,
+                ' under negotiated policy.","external_url":"http://localhost:5173/agreements/',
+                agreementId,
+                '","image":"', FIXED_BADGE_URL,
+                '","attributes":[',
+                '{"trait_type":"Agreement ID","value":"', agreementId, '"},',
+                '{"trait_type":"Asset ID","value":"', assetId, '"},',
+                '{"trait_type":"Provider ID","value":"', providerId, '"},',
+                '{"trait_type":"Consumer ID","value":"', consumerId, '"},',
+                '{"trait_type":"Signed At","value":"', Strings.toString(signedAt), '"}',
+                '],',
+                '"full_agreement":', fullAgreement,
+                '}'
+            )
+        );
+
+        // Encode metadata as base64 data URI
+        string memory base64JSON = Base64.encode(bytes(metadata));
+        string memory tokenURI = string(
+            abi.encodePacked("data:application/json;base64,", base64JSON)
+        );
 
         uint256 gasBefore = gasleft();
 
         vm.prank(owner);
         nft.mintAgreement(
             user1,
-            "gas-test",
-            "asset",
-            "provider",
-            "consumer",
-            block.timestamp,
+            agreementId,
+            assetId,
+            providerId,
+            consumerId,
+            signedAt,
             0,
             tokenURI
         );
@@ -144,8 +203,39 @@ contract EDCAgreementNFTTest is Test {
 
         emit log_named_uint("Gas used for minting (Full Storage + Data URI)", gasUsed);
 
+        // Full storage should use ~2M gas
+        assertLt(gasUsed, 2000000, "Gas usage should be lower than 2M");
+    }
+
+    function testGasMeasurementWithIPFS() public {
+        string memory agreementId = "eb2f88d5-cd15-4b19-b1b2-75e92e8ed8bf";
+        string memory assetId = "asset-3";
+        string memory providerId = "did:web:10.0.40.172%3A7083:provider";
+        string memory consumerId = "did:web:10.0.40.171%3A7083:consumer";
+        uint256 signedAt = block.timestamp;
+
+        string memory tokenURI = "https://ipfs.io/ipfs/QmTestMetadataHash123456789";
+
+        uint256 gasBefore = gasleft();
+
+        vm.prank(owner);
+        nft.mintAgreement(
+            user1,
+            agreementId,
+            assetId,
+            providerId,
+            consumerId,
+            signedAt,
+            0,
+            tokenURI
+        );
+
+        uint256 gasUsed = gasBefore - gasleft();
+
+        emit log_named_uint("Gas used for minting (IPFS)", gasUsed);
+
         // Full storage should use ~500k gas
-        assertLt(gasUsed, 1000000, "Gas usage should be under 500k");
+        assertLt(gasUsed, 500000, "Gas usage should be lower than 2M");
     }
 
     function testRevokeAgreement() public {

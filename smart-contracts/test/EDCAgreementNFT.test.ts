@@ -9,7 +9,9 @@ describe('EDCAgreementNFT', () => {
     let addr2: any;
     let publicClient: any;
 
+    // Same image for all NFTs
     const FIXED_BADGE_URL = 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400&h=400&fit=crop';
+    const HTTP_IPFS_METADATA_URI = 'https://ipfs.io/ipfs/QmTestMetadataHash123456789';
 
     before(async () => {
         const { viem } = await network.connect();
@@ -24,7 +26,7 @@ describe('EDCAgreementNFT', () => {
             const symbol = await contract.read.symbol();
 
             assert.equal(name, 'EDC Agreement NFT');
-            assert.equal(symbol, 'EDC_AGR_TEST');
+            assert.equal(symbol, 'EDC_AGR');
         });
 
         test('should set deployer as owner', async () => {
@@ -77,10 +79,10 @@ describe('EDCAgreementNFT', () => {
 
             await publicClient.waitForTransactionReceipt({ hash: txHash });
 
-            const tokenOwner = await contract.read.ownerOf([0n]);
+            const tokenOwner = await contract.read.ownerOf([1n]);
             assert.equal(tokenOwner.toLowerCase(), recipient.toLowerCase());
 
-            const uri = await contract.read.tokenURI([0n]);
+            const uri = await contract.read.tokenURI([1n]);
             assert.ok(uri.startsWith("data:application/json"));
 
             const base64Data = uri.split(",")[1];
@@ -93,7 +95,7 @@ describe('EDCAgreementNFT', () => {
                 const metadata = {
                     name: `EDC Agreement #${agreementId}`,
                     description: `Access token for asset ${assetId}`,
-                    image: FIXED_BADGE_URL, // Same image for all
+                    image: FIXED_BADGE_URL,
                     attributes: [
                         { trait_type: 'Agreement ID', value: agreementId },
                         { trait_type: 'Asset ID', value: assetId },
@@ -201,33 +203,61 @@ describe('EDCAgreementNFT', () => {
 
     describe('Gas Measurements', () => {
         test('should measure gas for minting with data URI', async () => {
-            const block = await publicClient.getBlock();
-            const signedAt = block.timestamp;
             const agreement = {
-                '@id': 'eb2f88d5-cd15-4b19-b1b2-75e92e8ed8be',
-                'assetId': 'asset-3',
-                'contractSigningDate': 1760534755,
-                'consumerId': 'did:web:10.0.40.171%3A7083:consumer',
-                'providerId': 'did:web:10.0.40.172%3A7083:provider',
+                "@type": "ContractAgreement",
+                "@id": "eb2f88d5-cd15-4b19-b1b2-75e92e8ed8be",
+                "assetId": "asset-3",
+                "policy": {
+                    "@id": "820ae012-e76b-48c7-a11a-0b27cc3b0fef",
+                    "@type": "odrl:Agreement",
+                    "odrl:permission": [],
+                    "odrl:prohibition": [],
+                    "odrl:obligation": {
+                        "odrl:action": {
+                            "@id": "odrl:use"
+                        },
+                        "odrl:constraint": {
+                            "odrl:leftOperand": {
+                                "@id": "DataAccess.level"
+                            },
+                            "odrl:operator": {
+                                "@id": "odrl:eq"
+                            },
+                            "odrl:rightOperand": "processing"
+                        }
+                    },
+                    "odrl:assignee": "did:web:10.0.40.171%3A7083:consumer",
+                    "odrl:assigner": "did:web:10.0.40.172%3A7083:provider",
+                    "odrl:target": {
+                        "@id": "asset-3"
+                    }
+                },
+                "contractSigningDate": 1760534755,
+                "consumerId": "did:web:10.0.40.171%3A7083:consumer",
+                "providerId": "did:web:10.0.40.172%3A7083:provider",
+                "@context": {
+                    "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+                    "edc": "https://w3id.org/edc/v0.0.1/ns/",
+                    "odrl": "http://www.w3.org/ns/odrl/2/"
+                }
             };
 
+            const block = await publicClient.getBlock();
+            const signedAt = block.timestamp;
+
             const metadata = {
-                name: `EDC Agreement #${agreement['@id'].split(':').pop() || agreement['@id']}`,
+                name: `EDC Agreement #${agreement['@id']}`,
                 description: `Access token for asset ${agreement.assetId} under negotiated policy.`,
                 external_url: `http://localhost:5173/agreements/${agreement['@id']}`,
                 image: FIXED_BADGE_URL,
                 attributes: [
                     {
-                        trait_type: 'Asset ID',
-                        value: agreement.assetId,
-                    },
-                    {
                         trait_type: 'Agreement ID',
                         value: agreement['@id'],
                     },
                     {
-                        trait_type: 'Signed At',
-                        value: agreement.contractSigningDate,
+                        trait_type: 'Asset ID',
+                        value: agreement.assetId,
                     },
                     {
                         trait_type: 'Provider ID',
@@ -237,16 +267,21 @@ describe('EDCAgreementNFT', () => {
                         trait_type: 'Consumer ID',
                         value: agreement.consumerId,
                     },
+                    {
+                        trait_type: 'Signed At',
+                        value: agreement.contractSigningDate,
+                    },
                 ],
+                full_agreement: agreement,
             };
             const tokenURI = `data:application/json;base64,${btoa(JSON.stringify(metadata))}`;
 
             const txHash = await contract.write.mintAgreement([
                 addr1.account.address,
-                'gas-test-agreement',
-                'gas-test-asset',
-                'provider',
-                'consumer',
+                agreement['@id'],
+                agreement.assetId,
+                agreement.providerId,
+                agreement.consumerId,
                 signedAt,
                 0n,
                 tokenURI,
@@ -258,8 +293,41 @@ describe('EDCAgreementNFT', () => {
             console.log(`- Mint: ${receipt.gasUsed} gas`);
             console.log(`- Estimated cost @ 20 gwei: ~${(Number(receipt.gasUsed) * 20 * 3000 / 1e9).toFixed(4)} USD\n`);
 
-            // Full storage version uses ~500k gas
-            assert.ok(receipt.gasUsed < 1000000n, `Gas usage should be reasonable - Used gas ${receipt.gasUsed}`);
+            // Full storage version uses ~2M gas
+            assert.ok(receipt.gasUsed < 2000000n, `Gas usage should be lower than 2M - Used gas ${receipt.gasUsed}`);
+        });
+
+        test('should use less gas than base64 version', async () => {
+            const agreement = {
+                '@id': 'eb2f88d5-cd15-4b19-b1b2-75e92e8ed8bf',
+                'assetId': 'asset-3',
+                'contractSigningDate': 1760534755,
+                'consumerId': 'did:web:10.0.40.171%3A7083:consumer',
+                'providerId': 'did:web:10.0.40.172%3A7083:provider',
+            };
+            const block = await publicClient.getBlock();
+            const signedAt = block.timestamp;
+
+            const txHash = await contract.write.mintAgreement([
+                addr1.account.address,
+                agreement['@id'],
+                agreement.assetId,
+                agreement.providerId,
+                agreement.consumerId,
+                signedAt,
+                0n,
+                HTTP_IPFS_METADATA_URI,
+            ]);
+
+            const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+
+            console.log(`\n📊 Gas Usage (IPFS URI):`);
+            console.log(`- Mint: ${receipt.gasUsed} gas`);
+            console.log(`- Estimated cost @ 20 gwei: ~${(Number(receipt.gasUsed) * 20 * 3000 / 1e9).toFixed(4)} USD`);
+            console.log(`- Savings vs Base64: ~${((2000000 - Number(receipt.gasUsed)) / 2000000 * 100).toFixed(1)}%\n`);
+
+            // IPFS version should use significantly less gas than base64 version (~2M gas)
+            assert.ok(receipt.gasUsed < 500000n, `IPFS version should use less gas - Used: ${receipt.gasUsed}`);
         });
     });
 
