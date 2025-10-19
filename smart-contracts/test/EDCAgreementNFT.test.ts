@@ -500,4 +500,186 @@ describe('EDCAgreementNFT', () => {
             console.log(`- No IPFS uploads required\n`);
         });
     });
+
+    describe('Custom Errors', () => {
+        test('should revert if recipient is zero address', async () => {
+            const block = await publicClient.getBlock();
+            const signedAt = block.timestamp;
+
+            await assert.rejects(
+                contract.write.mintAgreement([
+                    '0x0000000000000000000000000000000000000000',
+                    'urn:uuid:zero-address',
+                    'urn:asset:test',
+                    'provider',
+                    'consumer',
+                    signedAt,
+                    0n,
+                    'data:application/json;utf8,{"name":"Zero Address"}',
+                ]),
+                /InvalidRecipientAddress/
+            );
+        });
+
+        test('should revert if agreementId is empty', async () => {
+            const block = await publicClient.getBlock();
+            const signedAt = block.timestamp;
+
+            await assert.rejects(
+                contract.write.mintAgreement([
+                    addr1.account.address,
+                    '',
+                    'urn:asset:test',
+                    'provider',
+                    'consumer',
+                    signedAt,
+                    0n,
+                    'data:application/json;utf8,{"name":"Empty AgreementId"}',
+                ]),
+                /AgreementIdRequired/
+            );
+        });
+
+        test('should revert if assetId is empty', async () => {
+            const block = await publicClient.getBlock();
+            const signedAt = block.timestamp;
+
+            await assert.rejects(
+                contract.write.mintAgreement([
+                    addr1.account.address,
+                    'urn:uuid:missing-asset',
+                    '',
+                    'provider',
+                    'consumer',
+                    signedAt,
+                    0n,
+                    'data:application/json;utf8,{"name":"Empty AssetId"}',
+                ]),
+                /AssetIdRequired/
+            );
+        });
+
+        test('should revert if agreement already minted', async () => {
+            const agreementId = 'urn:uuid:duplicate';
+            const block = await publicClient.getBlock();
+            const signedAt = block.timestamp;
+
+            // first mint should succeed
+            await contract.write.mintAgreement([
+                addr1.account.address,
+                agreementId,
+                'urn:asset:test',
+                'provider',
+                'consumer',
+                signedAt,
+                0n,
+                'data:application/json;utf8,{"name":"Duplicate Test"}',
+            ]);
+
+            // second mint with same agreementId should fail
+            await assert.rejects(
+                contract.write.mintAgreement([
+                    addr1.account.address,
+                    agreementId,
+                    'urn:asset:test2',
+                    'provider',
+                    'consumer',
+                    signedAt,
+                    0n,
+                    'data:application/json;utf8,{"name":"Duplicate Test 2"}',
+                ]),
+                /AgreementAlreadyMinted/
+            );
+        });
+
+        test('should revert if signedAt is in the future', async () => {
+            const block = await publicClient.getBlock();
+            const signedAt = block.timestamp + 1000n;
+
+            await assert.rejects(
+                contract.write.mintAgreement([
+                    addr1.account.address,
+                    'urn:uuid:future-time',
+                    'urn:asset:test',
+                    'provider',
+                    'consumer',
+                    signedAt,
+                    0n,
+                    'data:application/json;utf8,{"name":"Future Time"}',
+                ]),
+                /InvalidSigningTimestamp/
+            );
+        });
+
+        test('should revert when getting nonexistent token', async () => {
+            await assert.rejects(
+                contract.read.getAgreement([9999n]),
+                /TokenDoesNotExist/
+            );
+        });
+
+        test('should revert when agreement not found', async () => {
+            await assert.rejects(
+                contract.read.getTokenIdByAgreementId(['urn:uuid:does-not-exist']),
+                /AgreementNotFound/
+            );
+        });
+
+        test('should revert if non-owner tries to revoke', async () => {
+            const agreementId = 'urn:uuid:not-owner';
+            const block = await publicClient.getBlock();
+            const signedAt = block.timestamp;
+
+            await contract.write.mintAgreement([
+                addr1.account.address,
+                agreementId,
+                'urn:asset:test',
+                'provider',
+                'consumer',
+                signedAt,
+                0n,
+                'data:application/json;utf8,{"name":"Unauthorized Revoke"}',
+            ]);
+
+            const tokenId = await contract.read.getTokenIdByAgreementId([agreementId]);
+
+            await assert.rejects(
+                contract.write.revokeAgreement([tokenId, 'Not authorized'], { account: addr2.account }),
+                /NotAuthorizedToRevoke/
+            );
+        });
+
+        test('should revert if already revoked', async () => {
+            const agreementId = 'urn:uuid:already-revoked';
+            const block = await publicClient.getBlock();
+            const signedAt = block.timestamp;
+
+            await contract.write.mintAgreement([
+                addr1.account.address,
+                agreementId,
+                'urn:asset:test',
+                'provider',
+                'consumer',
+                signedAt,
+                0n,
+                'data:application/json;utf8,{"name":"Already Revoked"}',
+            ]);
+
+            const tokenId = await contract.read.getTokenIdByAgreementId([agreementId]);
+
+            await contract.write.revokeAgreement([tokenId, 'First revoke'], { account: addr1.account });
+
+            await assert.rejects(
+                contract.write.revokeAgreement([tokenId, 'Second revoke'], { account: addr1.account }),
+                /AgreementAlreadyRevoked/
+            );
+        });
+
+        test('should revert if revoking nonexistent token', async () => {
+            await assert.rejects(
+                contract.write.revokeAgreement([12345n, 'No token']),
+                /TokenDoesNotExist/
+            );
+        });
+    });
 });
