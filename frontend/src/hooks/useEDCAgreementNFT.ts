@@ -64,6 +64,7 @@ export function useEDCAgreementNFT() {
                 params.expiresAt,
                 params.tokenURI,
             ],
+            gas: 2_000_000n,
         });
     };
 
