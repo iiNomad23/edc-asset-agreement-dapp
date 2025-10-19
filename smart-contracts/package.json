@@ -13,6 +13,8 @@
     "compile": "npx hardhat compile",
     "local-deploy-default-contract": "npx hardhat ignition deploy ignition/modules/EDCAgreementNFT.ts --network localhost",
     "local-deployment-status-check": " npx hardhat ignition status chain-31337",
+    "sepolia-deploy-default-contract": "npx hardhat ignition deploy ignition/modules/EDCAgreementNFT.ts --network sepolia",
+    "sepolia-deploy-status-check": "npx hardhat ignition status chain-11155111",
     "maintenance:ncu:install": "npm install -g npm-check-updates",
     "maintenance:ncu": "ncu --enginesNode",
     "maintenance:ncu:u": "npm run maintenance:ncu -- --upgrade",
