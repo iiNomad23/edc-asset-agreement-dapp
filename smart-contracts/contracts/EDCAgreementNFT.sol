@@ -14,6 +14,17 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 contract EDCAgreementNFT is ERC721, ERC721URIStorage, Ownable {
     using Strings for uint256;
 
+    // Custom errors for better gas efficiency
+    error InvalidRecipientAddress();
+    error AgreementIdRequired();
+    error AssetIdRequired();
+    error AgreementAlreadyMinted();
+    error InvalidSigningTimestamp();
+    error TokenDoesNotExist();
+    error NotAuthorizedToRevoke();
+    error AgreementAlreadyRevoked();
+    error AgreementNotFound();
+
     uint256 private _tokenIdCounter = 1; // START AT 1 to avoid conflict with default mapping value
 
     struct AgreementMetadata {
@@ -82,11 +93,21 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, Ownable {
         uint256 expiresAt,
         string memory _tokenURI
     ) public returns (uint256) {
-        require(recipient != address(0), "Invalid recipient address");
-        require(bytes(agreementId).length > 0, "Agreement ID required");
-        require(bytes(assetId).length > 0, "Asset ID required");
-        require(agreementIdToTokenId[agreementId] == 0, "Agreement already minted");
-        require(signedAt <= block.timestamp, "Invalid signing timestamp");
+        if (recipient == address(0)) {
+            revert InvalidRecipientAddress();
+        }
+        if (bytes(agreementId).length == 0) {
+            revert AgreementIdRequired();
+        }
+        if (bytes(assetId).length == 0) {
+            revert AssetIdRequired();
+        }
+        if (agreementIdToTokenId[agreementId] != 0) {
+            revert AgreementAlreadyMinted();
+        }
+        if (signedAt > block.timestamp) {
+            revert InvalidSigningTimestamp();
+        }
 
         uint256 tokenId = _tokenIdCounter;
         _tokenIdCounter++;
@@ -128,12 +149,15 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, Ownable {
      * @param tokenId Token ID to revoke
      */
     function revokeAgreement(uint256 tokenId, string memory reason) public {
-        require(_ownerOf(tokenId) != address(0), "Token does not exist");
-        require(
-            _ownerOf(tokenId) == msg.sender || owner() == msg.sender,
-            "Not authorized to revoke"
-        );
-        require(!agreements[tokenId].isRevoked, "Agreement already revoked");
+        if (_ownerOf(tokenId) == address(0)) {
+            revert TokenDoesNotExist();
+        }
+        if (_ownerOf(tokenId) != msg.sender && owner() != msg.sender) {
+            revert NotAuthorizedToRevoke();
+        }
+        if (agreements[tokenId].isRevoked) {
+            revert AgreementAlreadyRevoked();
+        }
 
         AgreementMetadata storage agreement = agreements[tokenId];
         agreement.isRevoked = true;
@@ -164,7 +188,9 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, Ownable {
      * @param tokenId Token ID to query
      */
     function getAgreement(uint256 tokenId) external view returns (AgreementMetadata memory) {
-        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        if (_ownerOf(tokenId) == address(0)) {
+            revert TokenDoesNotExist();
+        }
         return agreements[tokenId];
     }
 
@@ -174,7 +200,9 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, Ownable {
      */
     function getTokenIdByAgreementId(string memory agreementId) external view returns (uint256) {
         uint256 tokenId = agreementIdToTokenId[agreementId];
-        require(tokenId != 0, "Agreement not found");
+        if (tokenId == 0) {
+            revert AgreementNotFound();
+        }
         return tokenId;
     }
 
@@ -183,7 +211,9 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, Ownable {
      * @param tokenId Token ID to check
      */
     function isValidAgreement(uint256 tokenId) external view returns (bool) {
-        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        if (_ownerOf(tokenId) == address(0)) {
+            revert TokenDoesNotExist();
+        }
 
         AgreementMetadata memory agreement = agreements[tokenId];
 
@@ -203,7 +233,9 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, Ownable {
      * @param tokenId Token ID to check
      */
     function isExpired(uint256 tokenId) public view returns (bool) {
-        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        if (_ownerOf(tokenId) == address(0)) {
+            revert TokenDoesNotExist();
+        }
 
         AgreementMetadata memory agreement = agreements[tokenId];
 
