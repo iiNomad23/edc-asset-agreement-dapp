@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAgreementMetadata, useMintTransactionHash } from '@/hooks/useEDCAgreementNFT.ts';
-import { ExternalLink, Loader2, Shield, ShieldAlert } from 'lucide-react';
+import { AlertCircle, ExternalLink, Loader2, Shield, ShieldAlert } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
@@ -13,7 +13,7 @@ import CopyButton from '@/components/CopyButton.tsx';
 
 const AgreementNFTCard: React.FC<{ tokenId: bigint, contractAddress: Address }> = ({ tokenId, contractAddress }) => {
     const { agreement, isLoading } = useAgreementMetadata(tokenId);
-    const { txHash, isLoading: txLoading } = useMintTransactionHash(tokenId);
+    const { txHash, isLoading: txLoading, error: txError } = useMintTransactionHash(tokenId);
     const chainId = useChainId();
 
     const explorerUrls = React.useMemo(() => {
@@ -76,7 +76,15 @@ const AgreementNFTCard: React.FC<{ tokenId: bigint, contractAddress: Address }> 
                                 </p>
                                 <p className="text-muted-foreground mb-1 break-all flex items-center">
                                     {txLoading ? (
-                                        'Loading tx...'
+                                        <>
+                                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                            Loading tx...
+                                        </>
+                                    ) : txError ? (
+                                        <span className="flex items-center text-yellow-600" title={txError}>
+                                            <AlertCircle className="w-3 h-3 mr-1" />
+                                            TxHash: Unable to load
+                                        </span>
                                     ) : txHash ? (
                                         <>
                                             TxHash: {shortenId(txHash, 8)}
@@ -145,10 +153,12 @@ const AgreementNFTCard: React.FC<{ tokenId: bigint, contractAddress: Address }> 
                         variant="outline"
                         size="sm"
                         className="w-full"
-                        onClick={() => window.open(explorerUrls.nft!, '_blank')}
+                        asChild
                     >
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        View NFT on Explorer
+                        <a href={explorerUrls.nft} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="w-4 h-4 mr-2" />
+                            <span>View NFT on Explorer</span>
+                        </a>
                     </Button>
                 ) : (
                     <Button variant="outline" size="sm" className="w-full" disabled>
@@ -162,15 +172,28 @@ const AgreementNFTCard: React.FC<{ tokenId: bigint, contractAddress: Address }> 
                         variant="outline"
                         size="sm"
                         className="w-full"
-                        onClick={() => window.open(explorerUrls.transaction!, '_blank')}
+                        asChild
                     >
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        View Transaction
+                        <a href={explorerUrls.transaction} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="w-4 h-4 mr-2" />
+                            View Transaction
+                        </a>
                     </Button>
                 ) : (
                     <Button variant="outline" size="sm" className="w-full" disabled>
                         <ExternalLink className="w-4 h-4 mr-2" />
-                        {txLoading ? 'Loading...' : explorerUrls.isLocalNetwork ? 'Local Network' : 'No Transaction'}
+                        {txLoading ? (
+                            <>
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                Loading...
+                            </>
+                        ) : txError ? (
+                            'Transaction Unavailable'
+                        ) : explorerUrls.isLocalNetwork ? (
+                            'Local Network'
+                        ) : (
+                            'No Transaction'
+                        )}
                     </Button>
                 )}
             </CardContent>

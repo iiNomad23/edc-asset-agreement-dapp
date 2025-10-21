@@ -32,7 +32,7 @@ const Root = (): React.ReactElement => {
     return (
         <WagmiProvider config={config}>
             <QueryClientProvider client={queryClient}>
-                <RainbowKitProvider theme={isDarkMode ? darkTheme() : lightTheme()}>
+                <RainbowKitProvider showRecentTransactions={true} theme={isDarkMode ? darkTheme() : lightTheme()}>
                     <App />
                 </RainbowKitProvider>
             </QueryClientProvider>

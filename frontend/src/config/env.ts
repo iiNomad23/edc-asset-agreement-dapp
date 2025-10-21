@@ -14,6 +14,7 @@ export const BACKEND_URL = requireEnv('VITE_BACKEND_URL');
 
 export const WC_PROJECT_ID = requireEnv('VITE_WC_PROJECT_ID');
 export const ETHERSCAN_API_KEY = getEnv('VITE_ETHERSCAN_API_KEY');
+export const ALCHEMY_API_KEY = getEnv('VITE_ALCHEMY_API_KEY');
 
 export const PINATA_API_KEY = getEnv('VITE_PINATA_API_KEY');
 export const PINATA_SECRET = getEnv('VITE_PINATA_SECRET');
