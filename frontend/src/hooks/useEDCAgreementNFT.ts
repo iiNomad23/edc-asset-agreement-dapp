@@ -3,11 +3,16 @@ import { Address } from 'viem';
 import { EDC_AGREEMENT_NFT_ABI } from '@/constants/contractAgreementNFTabi.ts';
 import { hardhat, mainnet, sepolia } from 'wagmi/chains';
 import { useEffect, useState } from 'react';
+import {
+    NFT_CONTRACT_ADDRESS_HARDHAT,
+    NFT_CONTRACT_ADDRESS_MAINNET,
+    NFT_CONTRACT_ADDRESS_SEPOLIA,
+} from '@/config/env.ts';
 
 const CONTRACT_ADDRESSES: Record<number, Address> = {
-    [mainnet.id]: import.meta.env.VITE_NFT_CONTRACT_ADDRESS_MAINNET as Address,
-    [sepolia.id]: import.meta.env.VITE_NFT_CONTRACT_ADDRESS_SEPOLIA as Address,
-    [hardhat.id]: import.meta.env.VITE_NFT_CONTRACT_ADDRESS_HARDHAT as Address,
+    [mainnet.id]: NFT_CONTRACT_ADDRESS_MAINNET as Address,
+    [sepolia.id]: NFT_CONTRACT_ADDRESS_SEPOLIA as Address,
+    [hardhat.id]: NFT_CONTRACT_ADDRESS_HARDHAT as Address,
 };
 
 export function useContractAddress(): Address {

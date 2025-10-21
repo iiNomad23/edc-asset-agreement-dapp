@@ -8,6 +8,7 @@ import { useEDCAgreementNFT } from '@/hooks/useEDCAgreementNFT.ts';
 import { toast } from 'sonner';
 import { generateAgreementMetadata, metadataToDataURI } from '@/lib/nftMetadata.ts';
 import { BaseError, ContractFunctionRevertedError } from 'viem';
+import { BACKEND_URL, DEFAULT_BADGE_IMAGE } from '@/config/env.ts';
 
 const AgreementsPage = (): React.ReactNode => {
     const { address, isConnected } = useAccount();
@@ -22,7 +23,7 @@ const AgreementsPage = (): React.ReactNode => {
     const { data: agreements, isLoading } = useQuery({
         queryKey: ['agreements'],
         queryFn: async () => {
-            const response = await fetch('http://localhost:8190/api/contracts/agreements');
+            const response = await fetch(`${BACKEND_URL}/api/contracts/agreements`);
             if (!response.ok) {
                 throw new Error('Failed to fetch agreements');
             }
@@ -84,7 +85,7 @@ const AgreementsPage = (): React.ReactNode => {
         try {
             setMintingAgreementId(agreement['@id']);
 
-            const metadata = generateAgreementMetadata(agreement, import.meta.env.VITE_DEFAULT_BADGE_IMAGE);
+            const metadata = generateAgreementMetadata(agreement, DEFAULT_BADGE_IMAGE);
             const tokenURI = metadataToDataURI(metadata);
 
             await mintAgreement({
