@@ -1,7 +1,11 @@
-node_modules
+# Build output
 dist
 dist-ssr
 *.local
+*.js
+*.js.map
+*.d.ts
+*.d.ts.map
 
 # Editor directories and files
 .vscode/*
