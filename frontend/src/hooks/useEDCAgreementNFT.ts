@@ -3,11 +3,16 @@ import { Address } from 'viem';
 import { EDC_AGREEMENT_NFT_ABI } from '@/constants/contractAgreementNFTabi.ts';
 import { hardhat, mainnet, sepolia } from 'wagmi/chains';
 import { useEffect, useState } from 'react';
+import {
+    NFT_CONTRACT_ADDRESS_HARDHAT,
+    NFT_CONTRACT_ADDRESS_MAINNET,
+    NFT_CONTRACT_ADDRESS_SEPOLIA,
+} from '@/config/env.ts';
 
 const CONTRACT_ADDRESSES: Record<number, Address> = {
-    [mainnet.id]: import.meta.env.VITE_NFT_CONTRACT_ADDRESS_MAINNET as Address,
-    [sepolia.id]: import.meta.env.VITE_NFT_CONTRACT_ADDRESS_SEPOLIA as Address,
-    [hardhat.id]: import.meta.env.VITE_NFT_CONTRACT_ADDRESS_HARDHAT as Address,
+    [mainnet.id]: NFT_CONTRACT_ADDRESS_MAINNET as Address,
+    [sepolia.id]: NFT_CONTRACT_ADDRESS_SEPOLIA as Address,
+    [hardhat.id]: NFT_CONTRACT_ADDRESS_HARDHAT as Address,
 };
 
 export function useContractAddress(): Address {
@@ -121,43 +126,71 @@ export function useMintTransactionHash(tokenId?: bigint) {
     const publicClient = usePublicClient();
     const [txHash, setTxHash] = useState<string | undefined>();
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | undefined>();
 
     useEffect(() => {
-        if (!publicClient || !contractAddress) {
+        if (!tokenId || !publicClient || !contractAddress) {
             return;
         }
 
         const fetchMintTx = async () => {
             setIsLoading(true);
+            setError(undefined);
             try {
-                const logs = await publicClient.getLogs({
-                    address: contractAddress,
-                    event: {
-                        type: 'event',
-                        name: 'AgreementMinted',
-                        inputs: [
-                            { type: 'uint256', name: 'tokenId', indexed: true },
-                            { type: 'string', name: 'agreementId', indexed: false },
-                            { type: 'string', name: 'assetId', indexed: false },
-                            { type: 'address', name: 'minter', indexed: true },
-                            { type: 'address', name: 'recipient', indexed: true },
-                            { type: 'string', name: 'providerId', indexed: false },
-                            { type: 'string', name: 'consumerId', indexed: false },
-                            { type: 'uint256', name: 'signedAt', indexed: false },
-                        ],
-                    },
-                    args: {
-                        tokenId: tokenId,
-                    },
-                    fromBlock: 0n,
-                    toBlock: 'latest',
-                });
+                const currentBlock = await publicClient.getBlockNumber();
 
-                if (logs.length > 0) {
-                    setTxHash(logs[0].transactionHash);
+                // query in chunks to avoid rate limits by free tier
+                const CHUNK_SIZE = 10000n;
+                const MAX_BLOCKS_TO_SEARCH = 100000n;
+
+                let fromBlock = currentBlock > MAX_BLOCKS_TO_SEARCH
+                    ? currentBlock - MAX_BLOCKS_TO_SEARCH
+                    : 0n;
+
+                while (fromBlock <= currentBlock) {
+                    const toBlock = fromBlock + CHUNK_SIZE > currentBlock
+                        ? currentBlock
+                        : fromBlock + CHUNK_SIZE;
+
+                    try {
+                        const logs = await publicClient.getLogs({
+                            address: contractAddress,
+                            event: {
+                                type: 'event',
+                                name: 'AgreementMinted',
+                                inputs: [
+                                    { type: 'uint256', name: 'tokenId', indexed: true },
+                                    { type: 'string', name: 'agreementId', indexed: false },
+                                    { type: 'string', name: 'assetId', indexed: false },
+                                    { type: 'address', name: 'minter', indexed: true },
+                                    { type: 'address', name: 'recipient', indexed: true },
+                                    { type: 'string', name: 'providerId', indexed: false },
+                                    { type: 'string', name: 'consumerId', indexed: false },
+                                    { type: 'uint256', name: 'signedAt', indexed: false },
+                                ],
+                            },
+                            args: {
+                                tokenId: tokenId,
+                            },
+                            fromBlock,
+                            toBlock,
+                        });
+
+                        if (logs.length > 0) {
+                            setTxHash(logs[0].transactionHash);
+                            return;
+                        }
+                    } catch (chunkError) {
+                        console.warn(`Failed to fetch logs for blocks ${fromBlock}-${toBlock}:`, chunkError);
+                    }
+
+                    fromBlock = toBlock + 1n;
                 }
+
+                setError('Transaction not found in recent blocks');
             } catch (error) {
                 console.error('Error fetching mint transaction:', error);
+                setError('Failed to fetch transaction');
             } finally {
                 setIsLoading(false);
             }
@@ -166,31 +199,5 @@ export function useMintTransactionHash(tokenId?: bigint) {
         void fetchMintTx();
     }, [tokenId, publicClient, contractAddress]);
 
-    return { txHash, isLoading };
-}
-
-export function useTokenIdByAgreementId(agreementId?: string) {
-    const contractAddress = useContractAddress();
-    const { data: tokenId, isLoading } = useReadContract({
-        address: contractAddress,
-        abi: EDC_AGREEMENT_NFT_ABI,
-        functionName: 'getTokenIdByAgreementId',
-        args: agreementId ? [agreementId] : undefined,
-        query: {
-            enabled: Boolean(agreementId),
-        },
-    });
-
-    return { tokenId: tokenId as bigint | undefined, isLoading };
-}
-
-export function useTotalSupply() {
-    const contractAddress = useContractAddress();
-    const { data: totalSupply, isLoading } = useReadContract({
-        address: contractAddress,
-        abi: EDC_AGREEMENT_NFT_ABI,
-        functionName: 'totalSupply',
-    });
-
-    return { totalSupply: totalSupply as bigint | undefined, isLoading };
+    return { txHash, isLoading, error };
 }

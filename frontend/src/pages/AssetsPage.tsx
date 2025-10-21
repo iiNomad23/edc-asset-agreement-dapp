@@ -6,6 +6,7 @@ import { CatalogEnvelop } from '@/types';
 import { ContractNegotiationRequest } from '@/types/contract.ts';
 import { OdrlPolicy } from '@/types/policy.ts';
 import { toast } from 'sonner';
+import { BACKEND_URL } from '@/config/env.ts';
 
 const AssetsPage = (): React.ReactNode => {
     const [selectedConnector, setSelectedConnector] = useState<string>('');
@@ -14,7 +15,7 @@ const AssetsPage = (): React.ReactNode => {
     const { data: cachedCatalogEnvelop, isLoading } = useQuery({
         queryKey: ['catalog'],
         queryFn: async () => {
-            const response = await fetch('http://localhost:8190/api/catalog/cached');
+            const response = await fetch(`${BACKEND_URL}/api/catalog/cached`);
             if (!response.ok) {
                 throw new Error('Failed to fetch catalog');
             }
@@ -25,7 +26,7 @@ const AssetsPage = (): React.ReactNode => {
 
     const negotiateMutation = useMutation({
         mutationFn: async (request: ContractNegotiationRequest) => {
-            const response = await fetch(`http://localhost:8190/api/contracts/negotiate`, {
+            const response = await fetch(`${BACKEND_URL}/api/contracts/negotiate`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -43,7 +44,7 @@ const AssetsPage = (): React.ReactNode => {
         onSuccess: async (data) => {
             try {
                 const response = await fetch(
-                    `http://localhost:8190/api/contracts/negotiations/${data['@id']}/wait`,
+                    `${BACKEND_URL}/api/contracts/negotiations/${data['@id']}/wait`,
                     { method: 'POST' }
                 );
 
