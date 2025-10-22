@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Check, Copy } from 'lucide-react';
 
 const CopyButton: React.FC<{ text: string }> = ({ text }) => {
-    const [copied, setCopied] = React.useState(false);
+    const [copied, setCopied] = useState(false);
 
     const handleCopy = async () => {
         const fallbackCopy = () => {

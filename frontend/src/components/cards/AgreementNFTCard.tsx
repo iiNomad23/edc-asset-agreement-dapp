@@ -1,24 +1,32 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useAgreementMetadata, useMintTimestamp, useMintTransactionHash } from '@/hooks/useEDCAgreementNFT.ts';
-import { ExternalLink, Loader2, Shield, ShieldAlert } from 'lucide-react';
+import { ExternalLink, Loader2, Shield, ShieldAlert, ShieldX } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 import { formatTimestamp } from '@/lib/utils.ts';
 import { Address } from 'viem';
 import { shortenId } from '@/lib/nftMetadataUtils.ts';
-import { useChainId } from 'wagmi';
+import { useAccount, useChainId } from 'wagmi';
 import CopyButton from '@/components/CopyButton.tsx';
 import { ETHERSCAN_BASES } from '@/config/constants.ts';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx';
+import { QueryKey } from '@tanstack/react-query';
 
-const AgreementNFTCard: React.FC<{ tokenId: bigint, contractAddress: Address }> = ({ tokenId, contractAddress }) => {
-    const { agreement, isLoading } = useAgreementMetadata(tokenId);
+interface AgreementNFTCardProps {
+    tokenId: bigint;
+    contractAddress: Address;
+    onRevokeClick: (tokenId: bigint, queryKey: QueryKey ) => void;
+}
+
+const AgreementNFTCard: React.FC<AgreementNFTCardProps> = ({ tokenId, contractAddress, onRevokeClick }) => {
+    const { agreement, isLoading, queryKey } = useAgreementMetadata(tokenId);
     const { txHash, isLoading: txHashLoading, error: txHashError } = useMintTransactionHash(tokenId);
     const { mintTimestamp, isLoading: mintLoading, error: mintError } = useMintTimestamp(txHash);
     const chainId = useChainId();
+    const { address } = useAccount();
 
-    const explorerUrls = React.useMemo(() => {
+    const explorerUrls = useMemo(() => {
         const baseUrl = ETHERSCAN_BASES[chainId];
         return {
             nft: baseUrl ? `${baseUrl}/nft/${contractAddress}/${tokenId}` : null,
@@ -41,6 +49,7 @@ const AgreementNFTCard: React.FC<{ tokenId: bigint, contractAddress: Address }> 
         return null;
     }
 
+    const canRevoke = address && !agreement.isRevoked;
     const isValid = !agreement.isRevoked &&
         (agreement.expiresAt === 0n || agreement.expiresAt > BigInt(Math.floor(Date.now() / 1000)));
 
@@ -77,7 +86,7 @@ const AgreementNFTCard: React.FC<{ tokenId: bigint, contractAddress: Address }> 
                                                         TxHash: Unable to load
                                                     </span>
                                                 </TooltipTrigger>
-                                                <TooltipContent side="top">
+                                                <TooltipContent>
                                                     {txHashError}
                                                 </TooltipContent>
                                             </Tooltip>
@@ -100,7 +109,7 @@ const AgreementNFTCard: React.FC<{ tokenId: bigint, contractAddress: Address }> 
                                                         Unable to load mint date
                                                     </span>
                                                 </TooltipTrigger>
-                                                <TooltipContent side="top">
+                                                <TooltipContent>
                                                     {mintError}
                                                 </TooltipContent>
                                             </Tooltip>
@@ -114,12 +123,54 @@ const AgreementNFTCard: React.FC<{ tokenId: bigint, contractAddress: Address }> 
                             </div>
                         </CardDescription>
                     </div>
-                    <Badge variant={isValid ? 'default' : 'destructive'}>
-                        {agreement.isRevoked ? 'Revoked' : isValid ? 'Valid' : 'Expired'}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                        {canRevoke && (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        onClick={() => onRevokeClick(tokenId, queryKey)}
+                                    >
+                                        <ShieldX className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Revoke Agreement</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        )}
+                        {agreement.isRevoked ? (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Badge variant="destructive" className="cursor-help">
+                                        Revoked
+                                    </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                    <div className="space-y-1">
+                                        <p className="font-semibold text-sm">Revocation Details</p>
+                                        <p className="text-xs">
+                                            {formatTimestamp(Number(agreement.revokedAt) * 1000)}
+                                        </p>
+                                        {agreement.revokeReason && (
+                                            <p className="text-xs border-t pt-1 mt-1">
+                                                "{agreement.revokeReason}"
+                                            </p>
+                                        )}
+                                    </div>
+                                </TooltipContent>
+                            </Tooltip>
+                        ) : (
+                            <Badge variant={isValid ? 'default' : 'destructive'}>
+                                {isValid ? 'Valid' : 'Expired'}
+                            </Badge>
+                        )}
+                    </div>
                 </div>
             </CardHeader>
-            <CardContent className="space-y-4 flex-1 flex flex-col justify-end">
+            <CardContent className="space-y-4 flex-1 flex flex-col ">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                         <p className="text-muted-foreground mb-1">Agreement ID</p>
@@ -149,18 +200,6 @@ const AgreementNFTCard: React.FC<{ tokenId: bigint, contractAddress: Address }> 
                     <div className="text-sm">
                         <p className="text-muted-foreground mb-1">Expires At</p>
                         <p className="text-xs">{formatTimestamp(Number(agreement.signedAt) * 1000)}</p>
-                    </div>
-                )}
-
-                {agreement.isRevoked && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm">
-                        <p className="font-semibold text-red-800 mb-1">Revocation Details</p>
-                        <p className="text-red-700 text-xs mb-1">
-                            {formatTimestamp(Number(agreement.signedAt) * 1000)}
-                        </p>
-                        {agreement.revokeReason && (
-                            <p className="text-red-600 text-xs italic">"{agreement.revokeReason}"</p>
-                        )}
                     </div>
                 )}
 

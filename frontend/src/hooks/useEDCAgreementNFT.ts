@@ -129,7 +129,7 @@ export function useAgreementTokens(address?: Address) {
 
 export function useAgreementMetadata(tokenId?: bigint) {
     const contractAddress = useContractAddress();
-    const { data, isLoading } = useReadContract({
+    const { data, isLoading, queryKey } = useReadContract({
         address: contractAddress,
         abi: EDC_AGREEMENT_NFT_ABI,
         functionName: 'getAgreement',
@@ -139,7 +139,7 @@ export function useAgreementMetadata(tokenId?: bigint) {
         },
     });
 
-    return { agreement: data as AgreementMetadata | undefined, isLoading };
+    return { agreement: data as AgreementMetadata | undefined, isLoading, queryKey };
 }
 
 export function useMintTransactionHash(tokenId?: bigint) {
