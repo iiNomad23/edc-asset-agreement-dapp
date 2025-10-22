@@ -1,6 +1,6 @@
 import React from 'react';
-import { useAgreementMetadata, useMintTransactionHash } from '@/hooks/useEDCAgreementNFT.ts';
-import { AlertCircle, ExternalLink, Loader2, Shield, ShieldAlert } from 'lucide-react';
+import { useAgreementMetadata, useMintTimestamp, useMintTransactionHash } from '@/hooks/useEDCAgreementNFT.ts';
+import { ExternalLink, Loader2, Shield, ShieldAlert } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
@@ -8,8 +8,8 @@ import { formatTimestamp } from '@/lib/utils.ts';
 import { Address } from 'viem';
 import { shortenId } from '@/lib/nftMetadataUtils.ts';
 import { useChainId } from 'wagmi';
-import { hardhat, mainnet, sepolia } from 'wagmi/chains';
 import CopyButton from '@/components/CopyButton.tsx';
+import { ETHERSCAN_BASES } from '@/config/constants.ts';
 
 const AgreementNFTCard: React.FC<{ tokenId: bigint, contractAddress: Address }> = ({ tokenId, contractAddress }) => {
     const { agreement, isLoading } = useAgreementMetadata(tokenId);
@@ -17,24 +17,11 @@ const AgreementNFTCard: React.FC<{ tokenId: bigint, contractAddress: Address }> 
     const chainId = useChainId();
 
     const explorerUrls = React.useMemo(() => {
-        const getBaseUrl = () => {
-            switch (chainId) {
-                case mainnet.id:
-                    return 'https://etherscan.io';
-                case sepolia.id:
-                    return 'https://sepolia.etherscan.io';
-                case hardhat.id:
-                default:
-                    return null;
-            }
-        };
-
-        const baseUrl = getBaseUrl();
-
+        const baseUrl = ETHERSCAN_BASES[chainId];
         return {
             nft: baseUrl ? `${baseUrl}/nft/${contractAddress}/${tokenId}` : null,
             transaction: baseUrl && txHash ? `${baseUrl}/tx/${txHash}` : null,
-            isLocalNetwork: chainId === hardhat.id,
+            isLocalNetwork: baseUrl === '',
         };
     }, [chainId, contractAddress, tokenId, txHash]);
 
