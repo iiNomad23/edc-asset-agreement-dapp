@@ -1,5 +1,5 @@
-import { useChainId, usePublicClient, useReadContract, useWriteContract } from 'wagmi';
-import { Address } from 'viem';
+import { useAccount, useChainId, usePublicClient, useReadContract, useWriteContract } from 'wagmi';
+import { Address, Hash } from 'viem';
 import { EDC_AGREEMENT_NFT_ABI } from '@/config/abis/contractAgreementNFTabi.ts';
 import { useEffect, useState } from 'react';
 import { CONTRACT_ADDRESSES } from '@/config/constants.ts';
@@ -36,6 +36,7 @@ export function useContractAddress(): Address {
 export function useEDCAgreementNFT() {
     const contractAddress = useContractAddress();
     const publicClient = usePublicClient();
+    const { address } = useAccount();
 
     const {
         writeContractAsync,
@@ -60,6 +61,7 @@ export function useEDCAgreementNFT() {
                 params.expiresAt,
                 params.tokenURI,
             ],
+            account: address,
         };
 
         const gas = await estimateGasWithBuffer(publicClient, contractCall);
@@ -86,6 +88,7 @@ export function useEDCAgreementNFT() {
             abi: EDC_AGREEMENT_NFT_ABI,
             functionName: 'revokeAgreement',
             args: [tokenId, reason],
+            account: address,
         };
 
         const gas = await estimateGasWithBuffer(publicClient, contractCall);
@@ -126,7 +129,7 @@ export function useAgreementTokens(address?: Address) {
 
 export function useAgreementMetadata(tokenId?: bigint) {
     const contractAddress = useContractAddress();
-    const { data, isLoading } = useReadContract({
+    const { data, isLoading, queryKey } = useReadContract({
         address: contractAddress,
         abi: EDC_AGREEMENT_NFT_ABI,
         functionName: 'getAgreement',
@@ -136,13 +139,13 @@ export function useAgreementMetadata(tokenId?: bigint) {
         },
     });
 
-    return { agreement: data as AgreementMetadata | undefined, isLoading };
+    return { agreement: data as AgreementMetadata | undefined, isLoading, queryKey };
 }
 
 export function useMintTransactionHash(tokenId?: bigint) {
     const contractAddress = useContractAddress();
     const publicClient = usePublicClient();
-    const [txHash, setTxHash] = useState<string | undefined>();
+    const [txHash, setTxHash] = useState<Hash | undefined>();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | undefined>();
 
@@ -218,4 +221,37 @@ export function useMintTransactionHash(tokenId?: bigint) {
     }, [tokenId, publicClient, contractAddress]);
 
     return { txHash, isLoading, error };
+}
+
+export function useMintTimestamp(txHash?: Hash) {
+    const publicClient = usePublicClient();
+    const [mintTimestamp, setMintTimestamp] = useState<Date | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!txHash || !publicClient) {
+            return;
+        }
+
+        const fetchTimestamp = async () => {
+            try {
+                setIsLoading(true);
+                setError(null);
+
+                const receipt = await publicClient.getTransactionReceipt({ hash: txHash });
+                const block = await publicClient.getBlock({ blockNumber: receipt.blockNumber });
+                setMintTimestamp(new Date(Number(block.timestamp) * 1000));
+            } catch (err) {
+                console.error('Error fetching mint timestamp:', err);
+                setError('Failed to load timestamp');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        void fetchTimestamp();
+    }, [txHash, publicClient]);
+
+    return { mintTimestamp, isLoading, error };
 }
