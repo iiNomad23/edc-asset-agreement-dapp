@@ -2,23 +2,21 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { ContractAgreement } from '@/types/contract.ts';
-import AgreementCard from '@/components/ContractAgreementCard.tsx';
-import { useAccount } from 'wagmi';
+import AgreementCard from '@/components/cards/ContractAgreementCard.tsx';
+import { useAccount, useChainId } from 'wagmi';
 import { useEDCAgreementNFT } from '@/hooks/useEDCAgreementNFT.ts';
 import { toast } from 'sonner';
-import { generateAgreementMetadata, metadataToDataURI } from '@/lib/nftMetadata.ts';
-import { BaseError, ContractFunctionRevertedError } from 'viem';
-import { BACKEND_URL, DEFAULT_BADGE_IMAGE } from '@/config/env.ts';
+import { generateAgreementMetadata, metadataToDataURI } from '@/lib/nftMetadataUtils.ts';
+import { BACKEND_URL } from '@/config/env.ts';
+import { parseContractError, parseTransactionRevertedErrorData } from '@/lib/contractErrorUtils.ts';
+import { DEFAULT_BADGE_IMAGE } from '@/config/constants.ts';
+import { TransactionRevertedError } from '@/errors/TransactionRevertedError.ts';
 
 const AgreementsPage = (): React.ReactNode => {
-    const { address, isConnected } = useAccount();
     const [mintingAgreementId, setMintingAgreementId] = useState<string | null>(null);
-
-    const {
-        mintAgreement,
-        isWritePending,
-        isTxConfirming,
-    } = useEDCAgreementNFT();
+    const { address, isConnected } = useAccount();
+    const chainId = useChainId();
+    const { mintAgreement } = useEDCAgreementNFT();
 
     const { data: agreements, isLoading } = useQuery({
         queryKey: ['agreements'],
@@ -31,50 +29,6 @@ const AgreementsPage = (): React.ReactNode => {
         },
         refetchInterval: 30000,
     });
-
-    const parseContractError = (error: unknown): string => {
-        if (error instanceof BaseError) {
-            const revertError = error.walk(err => err instanceof ContractFunctionRevertedError);
-            if (revertError instanceof ContractFunctionRevertedError) {
-                const errorName = revertError.data?.errorName;
-
-                switch (errorName) {
-                    case 'AgreementAlreadyMinted':
-                        return 'This agreement has already been minted as an NFT';
-                    case 'InvalidRecipientAddress':
-                        return 'Invalid recipient address';
-                    case 'AgreementIdRequired':
-                        return 'Agreement ID is required';
-                    case 'AssetIdRequired':
-                        return 'Asset ID is required';
-                    case 'InvalidSigningTimestamp':
-                        return 'Invalid signing timestamp';
-                    case 'TokenDoesNotExist':
-                        return 'Token does not exist';
-                    case 'NotAuthorizedToRevoke':
-                        return 'Not authorized to revoke this agreement';
-                    case 'AgreementAlreadyRevoked':
-                        return 'Agreement is already revoked';
-                    case 'AgreementNotFound':
-                        return 'Agreement not found';
-                    default:
-                        if (revertError.reason) {
-                            return revertError.reason;
-                        }
-                }
-            }
-
-            if (error.shortMessage) {
-                return error.shortMessage;
-            }
-        }
-
-        if (error instanceof Error) {
-            return error.message;
-        }
-
-        return 'An unknown error occurred';
-    };
 
     const handleMintNFT = async (agreement: ContractAgreement) => {
         if (!address) {
@@ -101,8 +55,15 @@ const AgreementsPage = (): React.ReactNode => {
 
             toast.success('NFT minting successful!');
         } catch (error) {
-            const errorMessage = parseContractError(error);
-            toast.error(errorMessage);
+            const message = parseContractError(error);
+
+            if (error instanceof TransactionRevertedError) {
+                const toastData = parseTransactionRevertedErrorData(error, chainId);
+                toast.error(message, toastData);
+            } else {
+                toast.error(message);
+            }
+
             setMintingAgreementId(null);
         }
     };
@@ -116,7 +77,7 @@ const AgreementsPage = (): React.ReactNode => {
     }
 
     const isMinting = (agreementId: string) => {
-        return mintingAgreementId === agreementId && (isWritePending || isTxConfirming);
+        return mintingAgreementId === agreementId;
     };
 
     return (

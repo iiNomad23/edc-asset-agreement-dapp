@@ -1,24 +1,9 @@
-import { useChainId, usePublicClient, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
+import { useChainId, usePublicClient, useReadContract, useWriteContract } from 'wagmi';
 import { Address } from 'viem';
-import { EDC_AGREEMENT_NFT_ABI } from '@/constants/contractAgreementNFTabi.ts';
-import { hardhat, mainnet, sepolia } from 'wagmi/chains';
+import { EDC_AGREEMENT_NFT_ABI } from '@/config/abis/contractAgreementNFTabi.ts';
 import { useEffect, useState } from 'react';
-import {
-    NFT_CONTRACT_ADDRESS_HARDHAT,
-    NFT_CONTRACT_ADDRESS_MAINNET,
-    NFT_CONTRACT_ADDRESS_SEPOLIA,
-} from '@/config/env.ts';
-
-const CONTRACT_ADDRESSES: Record<number, Address> = {
-    [mainnet.id]: NFT_CONTRACT_ADDRESS_MAINNET as Address,
-    [sepolia.id]: NFT_CONTRACT_ADDRESS_SEPOLIA as Address,
-    [hardhat.id]: NFT_CONTRACT_ADDRESS_HARDHAT as Address,
-};
-
-export function useContractAddress(): Address {
-    const chainId = useChainId();
-    return CONTRACT_ADDRESSES[chainId];
-}
+import { CONTRACT_ADDRESSES } from '@/config/constants.ts';
+import { estimateGasWithBuffer, validatePublicClient, validateTransactionReceipt } from '@/lib/contractUtils.ts';
 
 export interface MintAgreementParams {
     recipient: Address;
@@ -43,19 +28,25 @@ export interface AgreementMetadata {
     revokeReason: string;
 }
 
+export function useContractAddress(): Address {
+    const chainId = useChainId();
+    return CONTRACT_ADDRESSES[chainId];
+}
+
 export function useEDCAgreementNFT() {
     const contractAddress = useContractAddress();
+    const publicClient = usePublicClient();
 
     const {
         writeContractAsync,
-        data: hash,
-        isPending: isWritePending,
+        reset,
     } = useWriteContract();
 
-    const { isLoading: isTxConfirming } = useWaitForTransactionReceipt({ hash });
+    const mintAgreement = async (params: MintAgreementParams): Promise<string> => {
+        reset();
+        validatePublicClient(publicClient);
 
-    const mintAgreement = (params: MintAgreementParams) => {
-        return writeContractAsync({
+        const contractCall = {
             address: contractAddress,
             abi: EDC_AGREEMENT_NFT_ABI,
             functionName: 'mintAgreement',
@@ -69,25 +60,52 @@ export function useEDCAgreementNFT() {
                 params.expiresAt,
                 params.tokenURI,
             ],
-            gas: 2_000_000n,
+        };
+
+        const gas = await estimateGasWithBuffer(publicClient, contractCall);
+        const txHash = await writeContractAsync({
+            ...contractCall,
+            gas: gas,
         });
+
+        const receipt = await publicClient.waitForTransactionReceipt({
+            hash: txHash,
+        });
+
+        validateTransactionReceipt(receipt);
+
+        return txHash;
     };
 
-    const revokeAgreement = (tokenId: bigint, reason: string) => {
-        return writeContractAsync({
+    const revokeAgreement = async (tokenId: bigint, reason: string): Promise<string> => {
+        reset();
+        validatePublicClient(publicClient);
+
+        const contractCall = {
             address: contractAddress,
             abi: EDC_AGREEMENT_NFT_ABI,
             functionName: 'revokeAgreement',
             args: [tokenId, reason],
+        };
+
+        const gas = await estimateGasWithBuffer(publicClient, contractCall);
+        const txHash = await writeContractAsync({
+            ...contractCall,
+            gas: gas,
         });
+
+        const receipt = await publicClient.waitForTransactionReceipt({
+            hash: txHash,
+        });
+
+        validateTransactionReceipt(receipt);
+
+        return txHash;
     };
 
     return {
         mintAgreement,
         revokeAgreement,
-        isWritePending,
-        isTxConfirming,
-        hash,
     };
 }
 

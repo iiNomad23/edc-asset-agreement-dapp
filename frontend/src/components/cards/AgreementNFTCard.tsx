@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 import { formatTimestamp } from '@/lib/utils.ts';
 import { Address } from 'viem';
-import { shortenId } from '@/lib/nftMetadata.ts';
+import { shortenId } from '@/lib/nftMetadataUtils.ts';
 import { useChainId } from 'wagmi';
 import { hardhat, mainnet, sepolia } from 'wagmi/chains';
 import CopyButton from '@/components/CopyButton.tsx';

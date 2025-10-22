@@ -1,6 +1,6 @@
 import { ContractAgreement } from '@/types/contract';
 
-export interface NFTMetadata {
+export interface NftMetadata {
     name: string;
     description: string;
     external_url: string;
@@ -15,7 +15,7 @@ export interface NFTMetadata {
 export function generateAgreementMetadata(
     agreement: ContractAgreement,
     imageUrl: string
-): NFTMetadata {
+): NftMetadata {
     return {
         name: `EDC Agreement #${agreement['@id']}`,
         description: `Access token for asset ${agreement.assetId} under negotiated policy.`,
@@ -47,7 +47,7 @@ export function generateAgreementMetadata(
     };
 }
 
-export function metadataToDataURI(metadata: NFTMetadata): string {
+export function metadataToDataURI(metadata: NftMetadata): string {
     const jsonString = JSON.stringify(metadata);
     const base64 = btoa(jsonString);
     return `data:application/json;base64,${base64}`;

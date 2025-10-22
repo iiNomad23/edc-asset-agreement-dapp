@@ -1,8 +1,8 @@
 import React from 'react';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar.tsx';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Outlet } from 'react-router-dom';
-import { AppSidebar } from '@/components/AppSidebar.tsx';
+import { AppSidebar } from '@/components/layout/AppSidebar.tsx';
 import { Toaster } from '@/components/ui/sonner.tsx';
 
 const AppLayout = (): React.ReactNode => {

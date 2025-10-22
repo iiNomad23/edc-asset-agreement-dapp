@@ -5,9 +5,26 @@ const CopyButton: React.FC<{ text: string }> = ({ text }) => {
     const [copied, setCopied] = React.useState(false);
 
     const handleCopy = async () => {
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        const fallbackCopy = () => {
+            const userCopied = prompt('Copy the text below to clipboard:', text);
+            if (userCopied !== null) {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            }
+        };
+
+        if (navigator.clipboard == null) {
+            fallbackCopy();
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            fallbackCopy();
+        }
     };
 
     return (

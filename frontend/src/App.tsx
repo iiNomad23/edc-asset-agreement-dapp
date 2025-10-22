@@ -1,6 +1,6 @@
 import React from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import AppLayout from '@/components/AppLayout.tsx';
+import AppLayout from '@/components/layout/AppLayout.tsx';
 import AssetsPage from '@/pages/AssetsPage.tsx';
 import AgreementsPage from '@/pages/AgreementsPage.tsx';
 import MyNFTsPage from '@/pages/MyNFTsPage.tsx';
