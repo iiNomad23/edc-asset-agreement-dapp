@@ -1,4 +1,4 @@
-import { useChainId, usePublicClient, useReadContract, useWriteContract } from 'wagmi';
+import { useAccount, useChainId, usePublicClient, useReadContract, useWriteContract } from 'wagmi';
 import { Address, Hash } from 'viem';
 import { EDC_AGREEMENT_NFT_ABI } from '@/config/abis/contractAgreementNFTabi.ts';
 import { useEffect, useState } from 'react';
@@ -36,6 +36,7 @@ export function useContractAddress(): Address {
 export function useEDCAgreementNFT() {
     const contractAddress = useContractAddress();
     const publicClient = usePublicClient();
+    const { address } = useAccount();
 
     const {
         writeContractAsync,
@@ -60,6 +61,7 @@ export function useEDCAgreementNFT() {
                 params.expiresAt,
                 params.tokenURI,
             ],
+            account: address,
         };
 
         const gas = await estimateGasWithBuffer(publicClient, contractCall);
@@ -86,6 +88,7 @@ export function useEDCAgreementNFT() {
             abi: EDC_AGREEMENT_NFT_ABI,
             functionName: 'revokeAgreement',
             args: [tokenId, reason],
+            account: address,
         };
 
         const gas = await estimateGasWithBuffer(publicClient, contractCall);
