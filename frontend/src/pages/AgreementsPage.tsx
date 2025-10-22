@@ -63,7 +63,7 @@ const AgreementsPage = (): React.ReactNode => {
             } else {
                 toast.error(message);
             }
-
+        } finally {
             setMintingAgreementId(null);
         }
     };
