@@ -3,7 +3,7 @@ import { useAccount } from 'wagmi';
 import { useAgreementTokens, useContractAddress } from '@/hooks/useEDCAgreementNFT.ts';
 import { Loader2, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button.tsx';
-import AgreementNFTCard from '@/components/AgreementNFTCard.tsx';
+import AgreementNFTCard from '@/components/cards/AgreementNFTCard.tsx';
 import { Link } from 'react-router-dom';
 
 const MyNFTsPage: React.FC = () => {

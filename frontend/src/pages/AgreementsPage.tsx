@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { ContractAgreement } from '@/types/contract.ts';
-import AgreementCard from '@/components/ContractAgreementCard.tsx';
+import AgreementCard from '@/components/cards/ContractAgreementCard.tsx';
 import { useAccount, useChainId } from 'wagmi';
 import { useEDCAgreementNFT } from '@/hooks/useEDCAgreementNFT.ts';
 import { toast } from 'sonner';

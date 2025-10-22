@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
-import CatalogAssetCard from '@/components/CatalogAssetCard.tsx';
+import CatalogAssetCard from '@/components/cards/CatalogAssetCard.tsx';
 import { CatalogEnvelop } from '@/types';
 import { ContractNegotiationRequest } from '@/types/contract.ts';
 import { OdrlPolicy } from '@/types/policy.ts';
