@@ -3,6 +3,7 @@ import '@rainbow-me/rainbowkit/styles.css';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import Root from './Root.tsx';
+import { ThemeProvider } from 'next-themes';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -11,6 +12,8 @@ if (!rootElement) {
 
 ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
-        <Root />
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <Root />
+        </ThemeProvider>
     </React.StrictMode>,
 );

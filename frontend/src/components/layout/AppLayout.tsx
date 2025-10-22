@@ -4,6 +4,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Outlet } from 'react-router-dom';
 import { AppSidebar } from '@/components/layout/AppSidebar.tsx';
 import { Toaster } from '@/components/ui/sonner.tsx';
+import { ThemeToggle } from '@/components/ThemeToggle.tsx';
 
 const AppLayout = (): React.ReactNode => {
     return (
@@ -13,7 +14,10 @@ const AppLayout = (): React.ReactNode => {
                 <header className="flex-shrink-0 bg-background border-b p-2">
                     <div className="flex justify-between items-center">
                         <SidebarTrigger />
-                        <ConnectButton />
+                        <div className="flex items-center gap-2">
+                            <ThemeToggle />
+                            <ConnectButton />
+                        </div>
                     </div>
                 </header>
                 <main className="flex-1 overflow-y-auto p-4">
