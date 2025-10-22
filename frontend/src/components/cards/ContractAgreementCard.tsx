@@ -26,7 +26,7 @@ const AgreementCard: React.FC<AgreementCardProps> = ({ agreement, isConnected, i
                         </CardTitle>
                         <CardDescription className="mt-1">
                             <p className="text-muted-foreground break-all">
-                                {agreement['@id']}
+                                Type: {agreement['@type']}
                             </p>
                         </CardDescription>
                     </div>
@@ -36,16 +36,19 @@ const AgreementCard: React.FC<AgreementCardProps> = ({ agreement, isConnected, i
                 <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                            <p className="text-muted-foreground mb-1">Asset ID</p>
-                            <p className="font-mono text-xs break-all">{agreement.assetId}</p>
+                            <p className="text-muted-foreground mb-1">Agreement ID</p>
+                            <p className="font-mono text-xs break-all">{agreement['@id']}</p>
                         </div>
                         <div>
                             <p className="text-muted-foreground mb-1">Signed At</p>
-                            <p className="text-xs">{formattedDate}</p>
+                            <p className="font-mono text-xs">{formattedDate}</p>
                         </div>
                     </div>
-
                     <div className="space-y-2 text-sm">
+                        <div>
+                            <p className="text-muted-foreground mb-1">Asset ID</p>
+                            <p className="font-mono text-xs break-all">{agreement.assetId}</p>
+                        </div>
                         <div>
                             <p className="text-muted-foreground mb-1">Provider</p>
                             <p className="font-mono text-xs break-all">{agreement.providerId}</p>
@@ -56,7 +59,6 @@ const AgreementCard: React.FC<AgreementCardProps> = ({ agreement, isConnected, i
                         </div>
                     </div>
                 </div>
-
                 <Button
                     onClick={onMint}
                     disabled={!isConnected || isMinting}

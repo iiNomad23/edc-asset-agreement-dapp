@@ -42,7 +42,6 @@ const CatalogAssetCard: React.FC<CatalogAssetCardProps> = ({ asset, isSubscribin
                         </div>
                     )}
                 </div>
-
                 <Button onClick={onSubscribe} disabled={isSubscribing} variant="outline" size="sm" className="w-full">
                     {isSubscribing ? (
                         <>

@@ -1,5 +1,5 @@
 import { useChainId, usePublicClient, useReadContract, useWriteContract } from 'wagmi';
-import { Address } from 'viem';
+import { Address, Hash } from 'viem';
 import { EDC_AGREEMENT_NFT_ABI } from '@/config/abis/contractAgreementNFTabi.ts';
 import { useEffect, useState } from 'react';
 import { CONTRACT_ADDRESSES } from '@/config/constants.ts';
@@ -142,7 +142,7 @@ export function useAgreementMetadata(tokenId?: bigint) {
 export function useMintTransactionHash(tokenId?: bigint) {
     const contractAddress = useContractAddress();
     const publicClient = usePublicClient();
-    const [txHash, setTxHash] = useState<string | undefined>();
+    const [txHash, setTxHash] = useState<Hash | undefined>();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | undefined>();
 
@@ -218,4 +218,37 @@ export function useMintTransactionHash(tokenId?: bigint) {
     }, [tokenId, publicClient, contractAddress]);
 
     return { txHash, isLoading, error };
+}
+
+export function useMintTimestamp(txHash?: Hash) {
+    const publicClient = usePublicClient();
+    const [mintTimestamp, setMintTimestamp] = useState<Date | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!txHash || !publicClient) {
+            return;
+        }
+
+        const fetchTimestamp = async () => {
+            try {
+                setIsLoading(true);
+                setError(null);
+
+                const receipt = await publicClient.getTransactionReceipt({ hash: txHash });
+                const block = await publicClient.getBlock({ blockNumber: receipt.blockNumber });
+                setMintTimestamp(new Date(Number(block.timestamp) * 1000));
+            } catch (err) {
+                console.error('Error fetching mint timestamp:', err);
+                setError('Failed to load timestamp');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        void fetchTimestamp();
+    }, [txHash, publicClient]);
+
+    return { mintTimestamp, isLoading, error };
 }
