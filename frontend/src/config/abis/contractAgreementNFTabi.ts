@@ -8,6 +8,32 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
     },
     {
         'inputs': [],
+        'name': 'AccessControlBadConfirmation',
+        'type': 'error',
+    },
+    {
+        'inputs': [
+            {
+                'internalType': 'address',
+                'name': 'account',
+                'type': 'address',
+            },
+            {
+                'internalType': 'bytes32',
+                'name': 'neededRole',
+                'type': 'bytes32',
+            },
+        ],
+        'name': 'AccessControlUnauthorizedAccount',
+        'type': 'error',
+    },
+    {
+        'inputs': [],
+        'name': 'AgreementAlreadyExpired',
+        'type': 'error',
+    },
+    {
+        'inputs': [],
         'name': 'AgreementAlreadyMinted',
         'type': 'error',
     },
@@ -19,11 +45,6 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
     {
         'inputs': [],
         'name': 'AgreementIdRequired',
-        'type': 'error',
-    },
-    {
-        'inputs': [],
-        'name': 'AgreementNotFound',
         'type': 'error',
     },
     {
@@ -63,7 +84,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': 'tokenId',
                 'type': 'uint256',
-            },
+            }
         ],
         'name': 'ERC721InsufficientApproval',
         'type': 'error',
@@ -74,7 +95,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'address',
                 'name': 'approver',
                 'type': 'address',
-            }
+            },
         ],
         'name': 'ERC721InvalidApprover',
         'type': 'error',
@@ -129,9 +150,14 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': 'tokenId',
                 'type': 'uint256',
-            },
+            }
         ],
         'name': 'ERC721NonexistentToken',
+        'type': 'error',
+    },
+    {
+        'inputs': [],
+        'name': 'InsufficientPayment',
         'type': 'error',
     },
     {
@@ -146,34 +172,27 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
     },
     {
         'inputs': [],
+        'name': 'NoFundsToWithdraw',
+        'type': 'error',
+    },
+    {
+        'inputs': [],
         'name': 'NotAuthorizedToRevoke',
         'type': 'error',
     },
     {
-        'inputs': [
-            {
-                'internalType': 'address',
-                'name': 'owner',
-                'type': 'address',
-            }
-        ],
-        'name': 'OwnableInvalidOwner',
-        'type': 'error',
-    },
-    {
-        'inputs': [
-            {
-                'internalType': 'address',
-                'name': 'account',
-                'type': 'address',
-            },
-        ],
-        'name': 'OwnableUnauthorizedAccount',
+        'inputs': [],
+        'name': 'ReentrancyGuardReentrantCall',
         'type': 'error',
     },
     {
         'inputs': [],
         'name': 'TokenDoesNotExist',
+        'type': 'error',
+    },
+    {
+        'inputs': [],
+        'name': 'TransferFailed',
         'type': 'error',
     },
     {
@@ -226,7 +245,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': 'signedAt',
                 'type': 'uint256',
-            },
+            }
         ],
         'name': 'AgreementMinted',
         'type': 'event',
@@ -263,7 +282,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'string',
                 'name': 'reason',
                 'type': 'string',
-            }
+            },
         ],
         'name': 'AgreementRevoked',
         'type': 'event',
@@ -372,6 +391,25 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
         'anonymous': false,
         'inputs': [
             {
+                'indexed': true,
+                'internalType': 'address',
+                'name': 'to',
+                'type': 'address',
+            },
+            {
+                'indexed': false,
+                'internalType': 'uint256',
+                'name': 'amount',
+                'type': 'uint256',
+            }
+        ],
+        'name': 'FundsWithdrawn',
+        'type': 'event',
+    },
+    {
+        'anonymous': false,
+        'inputs': [
+            {
                 'indexed': false,
                 'internalType': 'uint256',
                 'name': '_tokenId',
@@ -386,18 +424,99 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
         'inputs': [
             {
                 'indexed': true,
+                'internalType': 'uint256',
+                'name': 'oldPrice',
+                'type': 'uint256',
+            },
+            {
+                'indexed': true,
+                'internalType': 'uint256',
+                'name': 'newPrice',
+                'type': 'uint256',
+            },
+            {
+                'indexed': true,
                 'internalType': 'address',
-                'name': 'previousOwner',
+                'name': 'updater',
+                'type': 'address',
+            }
+        ],
+        'name': 'MintPriceUpdated',
+        'type': 'event',
+    },
+    {
+        'anonymous': false,
+        'inputs': [
+            {
+                'indexed': true,
+                'internalType': 'bytes32',
+                'name': 'role',
+                'type': 'bytes32',
+            },
+            {
+                'indexed': true,
+                'internalType': 'bytes32',
+                'name': 'previousAdminRole',
+                'type': 'bytes32',
+            },
+            {
+                'indexed': true,
+                'internalType': 'bytes32',
+                'name': 'newAdminRole',
+                'type': 'bytes32',
+            }
+        ],
+        'name': 'RoleAdminChanged',
+        'type': 'event',
+    },
+    {
+        'anonymous': false,
+        'inputs': [
+            {
+                'indexed': true,
+                'internalType': 'bytes32',
+                'name': 'role',
+                'type': 'bytes32',
+            },
+            {
+                'indexed': true,
+                'internalType': 'address',
+                'name': 'account',
                 'type': 'address',
             },
             {
                 'indexed': true,
                 'internalType': 'address',
-                'name': 'newOwner',
+                'name': 'sender',
                 'type': 'address',
             }
         ],
-        'name': 'OwnershipTransferred',
+        'name': 'RoleGranted',
+        'type': 'event',
+    },
+    {
+        'anonymous': false,
+        'inputs': [
+            {
+                'indexed': true,
+                'internalType': 'bytes32',
+                'name': 'role',
+                'type': 'bytes32',
+            },
+            {
+                'indexed': true,
+                'internalType': 'address',
+                'name': 'account',
+                'type': 'address',
+            },
+            {
+                'indexed': true,
+                'internalType': 'address',
+                'name': 'sender',
+                'type': 'address',
+            }
+        ],
+        'name': 'RoleRevoked',
         'type': 'event',
     },
     {
@@ -424,6 +543,32 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
         ],
         'name': 'Transfer',
         'type': 'event',
+    },
+    {
+        'inputs': [],
+        'name': 'DEFAULT_ADMIN_ROLE',
+        'outputs': [
+            {
+                'internalType': 'bytes32',
+                'name': '',
+                'type': 'bytes32',
+            },
+        ],
+        'stateMutability': 'view',
+        'type': 'function',
+    },
+    {
+        'inputs': [],
+        'name': 'MINTER_ROLE',
+        'outputs': [
+            {
+                'internalType': 'bytes32',
+                'name': '',
+                'type': 'bytes32',
+            }
+        ],
+        'stateMutability': 'view',
+        'type': 'function',
     },
     {
         'inputs': [
@@ -612,7 +757,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'uint256',
                 'name': 'tokenId',
                 'type': 'uint256',
-            }
+            },
         ],
         'name': 'getApproved',
         'outputs': [
@@ -620,6 +765,25 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'address',
                 'name': '',
                 'type': 'address',
+            },
+        ],
+        'stateMutability': 'view',
+        'type': 'function',
+    },
+    {
+        'inputs': [
+            {
+                'internalType': 'address',
+                'name': 'owner',
+                'type': 'address',
+            },
+        ],
+        'name': 'getOwnedTokens',
+        'outputs': [
+            {
+                'internalType': 'uint256[]',
+                'name': '',
+                'type': 'uint256[]',
             }
         ],
         'stateMutability': 'view',
@@ -628,17 +792,91 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
     {
         'inputs': [
             {
-                'internalType': 'string',
-                'name': 'agreementId',
-                'type': 'string',
+                'internalType': 'bytes32',
+                'name': 'role',
+                'type': 'bytes32',
             }
         ],
-        'name': 'getTokenIdByAgreementId',
+        'name': 'getRoleAdmin',
         'outputs': [
             {
-                'internalType': 'uint256',
+                'internalType': 'bytes32',
                 'name': '',
-                'type': 'uint256',
+                'type': 'bytes32',
+            }
+        ],
+        'stateMutability': 'view',
+        'type': 'function',
+    },
+    {
+        'inputs': [
+            {
+                'internalType': 'address',
+                'name': 'account',
+                'type': 'address',
+            }
+        ],
+        'name': 'grantMinterRole',
+        'outputs': [],
+        'stateMutability': 'nonpayable',
+        'type': 'function',
+    },
+    {
+        'inputs': [
+            {
+                'internalType': 'bytes32',
+                'name': 'role',
+                'type': 'bytes32',
+            },
+            {
+                'internalType': 'address',
+                'name': 'account',
+                'type': 'address',
+            }
+        ],
+        'name': 'grantRole',
+        'outputs': [],
+        'stateMutability': 'nonpayable',
+        'type': 'function',
+    },
+    {
+        'inputs': [
+            {
+                'internalType': 'bytes32',
+                'name': 'role',
+                'type': 'bytes32',
+            },
+            {
+                'internalType': 'address',
+                'name': 'account',
+                'type': 'address',
+            }
+        ],
+        'name': 'hasRole',
+        'outputs': [
+            {
+                'internalType': 'bool',
+                'name': '',
+                'type': 'bool',
+            }
+        ],
+        'stateMutability': 'view',
+        'type': 'function',
+    },
+    {
+        'inputs': [
+            {
+                'internalType': 'address',
+                'name': 'account',
+                'type': 'address',
+            }
+        ],
+        'name': 'isAdmin',
+        'outputs': [
+            {
+                'internalType': 'bool',
+                'name': '',
+                'type': 'bool',
             }
         ],
         'stateMutability': 'view',
@@ -671,12 +909,12 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
     {
         'inputs': [
             {
-                'internalType': 'uint256',
-                'name': 'tokenId',
-                'type': 'uint256',
-            }
+                'internalType': 'address',
+                'name': 'account',
+                'type': 'address',
+            },
         ],
-        'name': 'isExpired',
+        'name': 'isMinter',
         'outputs': [
             {
                 'internalType': 'bool',
@@ -690,17 +928,97 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
     {
         'inputs': [
             {
+                'internalType': 'string',
+                'name': 'agreementId',
+                'type': 'string',
+            },
+            {
+                'internalType': 'string',
+                'name': 'assetId',
+                'type': 'string',
+            },
+            {
+                'internalType': 'string',
+                'name': 'providerId',
+                'type': 'string',
+            },
+            {
+                'internalType': 'string',
+                'name': 'consumerId',
+                'type': 'string',
+            },
+            {
                 'internalType': 'uint256',
-                'name': 'tokenId',
+                'name': 'signedAt',
+                'type': 'uint256',
+            },
+            {
+                'internalType': 'uint256',
+                'name': 'expiresAt',
+                'type': 'uint256',
+            },
+            {
+                'internalType': 'string',
+                'name': '_tokenURI',
+                'type': 'string',
+            }
+        ],
+        'name': 'mint',
+        'outputs': [
+            {
+                'internalType': 'uint256',
+                'name': '',
                 'type': 'uint256',
             }
         ],
-        'name': 'isValidAgreement',
+        'stateMutability': 'payable',
+        'type': 'function',
+    },
+    {
+        'inputs': [],
+        'name': 'mintPrice',
         'outputs': [
             {
-                'internalType': 'bool',
+                'internalType': 'uint256',
                 'name': '',
-                'type': 'bool',
+                'type': 'uint256',
+            }
+        ],
+        'stateMutability': 'view',
+        'type': 'function',
+    },
+    {
+        'inputs': [],
+        'name': 'name',
+        'outputs': [
+            {
+                'internalType': 'string',
+                'name': '',
+                'type': 'string',
+            }
+        ],
+        'stateMutability': 'view',
+        'type': 'function',
+    },
+    {
+        'inputs': [
+            {
+                'internalType': 'address',
+                'name': '',
+                'type': 'address',
+            },
+            {
+                'internalType': 'uint256',
+                'name': '',
+                'type': 'uint256',
+            }
+        ],
+        'name': 'ownedTokens',
+        'outputs': [
+            {
+                'internalType': 'uint256',
+                'name': '',
+                'type': 'uint256',
             }
         ],
         'stateMutability': 'view',
@@ -747,9 +1065,9 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'string',
                 'name': '_tokenURI',
                 'type': 'string',
-            }
+            },
         ],
-        'name': 'mintAgreement',
+        'name': 'ownerMint',
         'outputs': [
             {
                 'internalType': 'uint256',
@@ -758,32 +1076,6 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
             }
         ],
         'stateMutability': 'nonpayable',
-        'type': 'function',
-    },
-    {
-        'inputs': [],
-        'name': 'name',
-        'outputs': [
-            {
-                'internalType': 'string',
-                'name': '',
-                'type': 'string',
-            }
-        ],
-        'stateMutability': 'view',
-        'type': 'function',
-    },
-    {
-        'inputs': [],
-        'name': 'owner',
-        'outputs': [
-            {
-                'internalType': 'address',
-                'name': '',
-                'type': 'address',
-            }
-        ],
-        'stateMutability': 'view',
         'type': 'function',
     },
     {
@@ -806,8 +1098,19 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
         'type': 'function',
     },
     {
-        'inputs': [],
-        'name': 'renounceOwnership',
+        'inputs': [
+            {
+                'internalType': 'bytes32',
+                'name': 'role',
+                'type': 'bytes32',
+            },
+            {
+                'internalType': 'address',
+                'name': 'callerConfirmation',
+                'type': 'address',
+            }
+        ],
+        'name': 'renounceRole',
         'outputs': [],
         'stateMutability': 'nonpayable',
         'type': 'function',
@@ -833,20 +1136,32 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
     {
         'inputs': [
             {
-                'internalType': 'string',
-                'name': '',
-                'type': 'string',
+                'internalType': 'address',
+                'name': 'account',
+                'type': 'address',
             }
         ],
-        'name': 'revokedAgreements',
-        'outputs': [
+        'name': 'revokeMinterRole',
+        'outputs': [],
+        'stateMutability': 'nonpayable',
+        'type': 'function',
+    },
+    {
+        'inputs': [
             {
-                'internalType': 'bool',
-                'name': '',
-                'type': 'bool',
+                'internalType': 'bytes32',
+                'name': 'role',
+                'type': 'bytes32',
+            },
+            {
+                'internalType': 'address',
+                'name': 'account',
+                'type': 'address',
             }
         ],
-        'stateMutability': 'view',
+        'name': 'revokeRole',
+        'outputs': [],
+        'stateMutability': 'nonpayable',
         'type': 'function',
     },
     {
@@ -924,7 +1239,7 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
                 'internalType': 'bytes4',
                 'name': 'interfaceId',
                 'type': 'bytes4',
-            }
+            },
         ],
         'name': 'supportsInterface',
         'outputs': [
@@ -970,25 +1285,6 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
         'type': 'function',
     },
     {
-        'inputs': [
-            {
-                'internalType': 'address',
-                'name': 'owner',
-                'type': 'address',
-            }
-        ],
-        'name': 'tokensOfOwner',
-        'outputs': [
-            {
-                'internalType': 'uint256[]',
-                'name': '',
-                'type': 'uint256[]',
-            }
-        ],
-        'stateMutability': 'view',
-        'type': 'function',
-    },
-    {
         'inputs': [],
         'name': 'totalSupply',
         'outputs': [
@@ -1027,12 +1323,19 @@ export const EDC_AGREEMENT_NFT_ABI: Abi = [
     {
         'inputs': [
             {
-                'internalType': 'address',
-                'name': 'newOwner',
-                'type': 'address',
+                'internalType': 'uint256',
+                'name': 'newPrice',
+                'type': 'uint256',
             }
         ],
-        'name': 'transferOwnership',
+        'name': 'updateMintPrice',
+        'outputs': [],
+        'stateMutability': 'nonpayable',
+        'type': 'function',
+    },
+    {
+        'inputs': [],
+        'name': 'withdraw',
         'outputs': [],
         'stateMutability': 'nonpayable',
         'type': 'function',
