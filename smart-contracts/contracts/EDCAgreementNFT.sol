@@ -277,6 +277,22 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, AccessControl, ReentrancyG
     }
 
     /**
+     * @dev Admin can grant minter role to an address
+     * @param account The address to grant minter role to
+     */
+    function grantMinterRole(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        grantRole(MINTER_ROLE, account);
+    }
+
+    /**
+     * @dev Admin can revoke minter role from an address
+     * @param account The address to revoke minter role from
+     */
+    function revokeMinterRole(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        revokeRole(MINTER_ROLE, account);
+    }
+
+    /**
      * @dev Returns true if the account has the MINTER_ROLE.
      * @param account The address to check.
      */
