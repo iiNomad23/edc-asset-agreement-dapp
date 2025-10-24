@@ -33,7 +33,6 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, AccessControl, ReentrancyG
 
     uint256 public totalSupply = 0;
     uint256 public mintPrice = 0 ether;
-    address[] public interactedWallets;
 
     struct AgreementMetadata {
         string agreementId;
@@ -50,7 +49,6 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, AccessControl, ReentrancyG
     mapping(uint256 => AgreementMetadata) public agreements;
     mapping(string => uint256) public agreementIdToTokenId;
     mapping(address => uint256[]) public ownedTokens;
-    mapping(address => bool) public hasInteracted;
 
     event AgreementMinted(
         uint256 indexed tokenId,
@@ -309,18 +307,6 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, AccessControl, ReentrancyG
     }
 
     /**
-     * @dev Internal function to track wallet interaction
-     */
-    function _trackWalletInteraction(address wallet) private {
-        if (hasInteracted[wallet]) {
-            return;
-        }
-
-        interactedWallets.push(wallet);
-        hasInteracted[wallet] = true;
-    }
-
-    /**
      * @dev Internal function to mint a new agreement NFT
      */
     function _mintAgreement(
@@ -349,8 +335,6 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, AccessControl, ReentrancyG
         });
 
         agreementIdToTokenId[agreementId] = tokenId;
-
-        _trackWalletInteraction(recipient);
         ownedTokens[recipient].push(tokenId);
 
         _safeMint(recipient, tokenId);
@@ -392,8 +376,6 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, AccessControl, ReentrancyG
 
         if (from != address(0) && to != address(0) && from != to) {
             _removeTokenFromOwner(from, tokenId);
-
-            _trackWalletInteraction(to);
             ownedTokens[to].push(tokenId);
 
             emit AgreementTransferred(tokenId, agreements[tokenId].agreementId, from, to);
