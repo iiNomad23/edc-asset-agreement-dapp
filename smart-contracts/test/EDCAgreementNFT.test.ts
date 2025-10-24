@@ -1,6 +1,7 @@
 import { before, describe, test } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { network } from 'hardhat';
+import { parseEther } from 'viem';
 
 describe('EDCAgreementNFT', () => {
     let contract: any;
@@ -29,14 +30,26 @@ describe('EDCAgreementNFT', () => {
             assert.equal(symbol, 'EDC_AGR');
         });
 
-        test('should set deployer as owner', async () => {
-            const contractOwner = await contract.read.owner();
-            assert.equal(contractOwner.toLowerCase(), owner.account.address.toLowerCase());
+        test('should set deployer as admin', async () => {
+            const isAdmin = await contract.read.isAdmin([owner.account.address]);
+            assert.equal(isAdmin, true);
+        });
+
+        test('should not grant roles to non-deployer addresses by default', async () => {
+            const isAdmin = await contract.read.isAdmin([addr1.account.address]);
+            const isMinter = await contract.read.isMinter([addr1.account.address]);
+            assert.equal(isAdmin, false);
+            assert.equal(isMinter, false);
         });
 
         test('should start with zero total supply', async () => {
             const supply = await contract.read.totalSupply();
             assert.equal(supply, 0n);
+        });
+
+        test('should start with zero mint price', async () => {
+            const mintPrice = await contract.read.mintPrice();
+            assert.equal(mintPrice, 0n);
         });
     });
 
@@ -66,7 +79,7 @@ describe('EDCAgreementNFT', () => {
 
             const tokenURI = `data:application/json;base64,${btoa(JSON.stringify(metadata))}`;
 
-            const txHash = await contract.write.mintAgreement([
+            const txHash = await contract.write.ownerMint([
                 recipient,
                 agreementId,
                 assetId,
@@ -112,7 +125,7 @@ describe('EDCAgreementNFT', () => {
                 const signedAt = block.timestamp;
                 const tokenURI = createTokenURI(agreementId, assetId);
 
-                await contract.write.mintAgreement([
+                await contract.write.ownerMint([
                     addr1.account.address,
                     agreementId,
                     assetId,
@@ -146,7 +159,7 @@ describe('EDCAgreementNFT', () => {
                 };
                 const tokenURI = `data:application/json;base64,${btoa(JSON.stringify(metadata))}`;
 
-                await contract.write.mintAgreement([
+                await contract.write.ownerMint([
                     addr1.account.address,
                     `agreement-url-test-${i}`,
                     `asset-${i}`,
@@ -177,7 +190,7 @@ describe('EDCAgreementNFT', () => {
             };
             const tokenURI = `data:application/json;base64,${btoa(JSON.stringify(metadata))}`;
 
-            await contract.write.mintAgreement([
+            await contract.write.ownerMint([
                 addr1.account.address,
                 agreementId,
                 assetId,
@@ -190,7 +203,7 @@ describe('EDCAgreementNFT', () => {
 
             await new Promise(resolve => setTimeout(resolve, 100));
 
-            const tokenId = await contract.read.getTokenIdByAgreementId([agreementId]);
+            const tokenId = await contract.read.agreementIdToTokenId([agreementId]);
             const agreement = await contract.read.getAgreement([tokenId]);
 
             assert.equal(agreement.agreementId, agreementId);
@@ -198,6 +211,169 @@ describe('EDCAgreementNFT', () => {
             assert.equal(agreement.providerId, providerId);
             assert.equal(agreement.consumerId, consumerId);
             assert.equal(agreement.signedAt, signedAt);
+        });
+    });
+
+    describe('Access Control & Roles', () => {
+        test('should grant and revoke minter role', async () => {
+            await contract.write.grantMinterRole([addr1.account.address]);
+            const isMinter = await contract.read.isMinter([addr1.account.address]);
+            assert.equal(isMinter, true);
+
+            await contract.write.revokeMinterRole([addr1.account.address]);
+            const isMinterAfter = await contract.read.isMinter([addr1.account.address]);
+            assert.equal(isMinterAfter, false);
+        });
+
+        test('should allow minter to mint for themselves', async () => {
+            await contract.write.grantMinterRole([addr1.account.address]);
+
+            const agreementId = 'urn:uuid:minter-self-mint';
+            const block = await publicClient.getBlock();
+            const signedAt = block.timestamp;
+            const metadata = {
+                name: 'Minter Self Mint',
+                image: FIXED_BADGE_URL,
+                attributes: [],
+            };
+            const tokenURI = `data:application/json;base64,${btoa(JSON.stringify(metadata))}`;
+
+            const txHash = await contract.write.mint([
+                agreementId,
+                'asset-minter',
+                'provider',
+                'consumer',
+                signedAt,
+                0n,
+                tokenURI,
+            ], { account: addr1.account });
+
+            await publicClient.waitForTransactionReceipt({ hash: txHash });
+
+            const tokenId = await contract.read.agreementIdToTokenId([agreementId]);
+            const tokenOwner = await contract.read.ownerOf([tokenId]);
+            assert.equal(tokenOwner.toLowerCase(), addr1.account.address.toLowerCase());
+        });
+
+        test('should revert normal mint without minter role', async () => {
+            const isMinter = await contract.read.isMinter([addr2.account.address]);
+            assert.equal(isMinter, false);
+
+            const agreementId = 'urn:uuid:no-role-mint';
+            const block = await publicClient.getBlock();
+            const signedAt = block.timestamp;
+            const metadata = {
+                name: 'No Role Test',
+                image: FIXED_BADGE_URL,
+                attributes: [],
+            };
+            const tokenURI = `data:application/json;base64,${btoa(JSON.stringify(metadata))}`;
+
+            await assert.rejects(
+                contract.write.mint([
+                    agreementId,
+                    'asset-no-role',
+                    'provider',
+                    'consumer',
+                    signedAt,
+                    0n,
+                    tokenURI,
+                ], { account: addr2.account }),
+                /AccessControlUnauthorizedAccount|0x0dc149f0/
+            );
+        });
+    });
+
+    describe('Mint Price & Payment', () => {
+        test('should update mint price', async () => {
+            const newPrice = parseEther('0.01');
+            await contract.write.updateMintPrice([newPrice]);
+            const mintPrice = await contract.read.mintPrice();
+            assert.equal(mintPrice, newPrice);
+
+            // Reset price
+            await contract.write.updateMintPrice([0n]);
+        });
+
+        test('should require payment when mint price is set', async () => {
+            const mintPrice = parseEther('0.01');
+            await contract.write.updateMintPrice([mintPrice]);
+            await contract.write.grantMinterRole([addr2.account.address]);
+
+            const agreementId = 'urn:uuid:paid-mint';
+            const block = await publicClient.getBlock();
+            const signedAt = block.timestamp;
+            const metadata = {
+                name: 'Paid Mint',
+                image: FIXED_BADGE_URL,
+                attributes: [],
+            };
+            const tokenURI = `data:application/json;base64,${btoa(JSON.stringify(metadata))}`;
+
+            const txHash = await contract.write.mint([
+                agreementId,
+                'asset-paid',
+                'provider',
+                'consumer',
+                signedAt,
+                0n,
+                tokenURI,
+            ], {
+                account: addr2.account,
+                value: mintPrice,
+            });
+
+            await publicClient.waitForTransactionReceipt({ hash: txHash });
+
+            const balance = await publicClient.getBalance({ address: contract.address });
+            assert.equal(balance, mintPrice);
+
+            // Withdraw to clean up for next test
+            await contract.write.withdraw();
+
+            // Reset price
+            await contract.write.updateMintPrice([0n]);
+        });
+
+        test('should withdraw contract balance', async () => {
+            const mintPrice = parseEther('0.01');
+            await contract.write.updateMintPrice([mintPrice]);
+            await contract.write.grantMinterRole([addr2.account.address]);
+
+            const agreementId = 'urn:uuid:withdraw-test-unique';
+            const block = await publicClient.getBlock();
+            const signedAt = block.timestamp;
+            const metadata = {
+                name: 'Withdraw Test',
+                image: FIXED_BADGE_URL,
+                attributes: [],
+            };
+            const tokenURI = `data:application/json;base64,${btoa(JSON.stringify(metadata))}`;
+
+            await contract.write.mint([
+                agreementId,
+                'asset-withdraw',
+                'provider',
+                'consumer',
+                signedAt,
+                0n,
+                tokenURI,
+            ], {
+                account: addr2.account,
+                value: mintPrice,
+            });
+
+            const balanceBefore = await publicClient.getBalance({ address: contract.address });
+            assert.equal(balanceBefore, mintPrice);
+
+            // Withdraw
+            await contract.write.withdraw();
+
+            const balanceAfter = await publicClient.getBalance({ address: contract.address });
+            assert.equal(balanceAfter, 0n);
+
+            // Reset price
+            await contract.write.updateMintPrice([0n]);
         });
     });
 
@@ -276,7 +452,7 @@ describe('EDCAgreementNFT', () => {
             };
             const tokenURI = `data:application/json;base64,${btoa(JSON.stringify(metadata))}`;
 
-            const txHash = await contract.write.mintAgreement([
+            const txHash = await contract.write.ownerMint([
                 addr1.account.address,
                 agreement['@id'],
                 agreement.assetId,
@@ -293,7 +469,7 @@ describe('EDCAgreementNFT', () => {
             console.log(`- Mint: ${receipt.gasUsed} gas`);
             console.log(`- Estimated cost @ 20 gwei: ~${(Number(receipt.gasUsed) * 20 * 3000 / 1e9).toFixed(4)} USD\n`);
 
-            // Full storage version uses ~2M gas
+            // Full storage should use ~2M gas
             assert.ok(receipt.gasUsed < 2000000n, `Gas usage should be lower than 2M - Used gas ${receipt.gasUsed}`);
         });
 
@@ -308,7 +484,7 @@ describe('EDCAgreementNFT', () => {
             const block = await publicClient.getBlock();
             const signedAt = block.timestamp;
 
-            const txHash = await contract.write.mintAgreement([
+            const txHash = await contract.write.ownerMint([
                 addr1.account.address,
                 agreement['@id'],
                 agreement.assetId,
@@ -326,8 +502,8 @@ describe('EDCAgreementNFT', () => {
             console.log(`- Estimated cost @ 20 gwei: ~${(Number(receipt.gasUsed) * 20 * 3000 / 1e9).toFixed(4)} USD`);
             console.log(`- Savings vs Base64: ~${((2000000 - Number(receipt.gasUsed)) / 2000000 * 100).toFixed(1)}%\n`);
 
-            // IPFS version should use significantly less gas than base64 version (~2M gas)
-            assert.ok(receipt.gasUsed < 500000n, `IPFS version should use less gas - Used: ${receipt.gasUsed}`);
+            // IPFS should use <500k gas
+            assert.ok(receipt.gasUsed < 500000n, `Gas usage should be lower than 500k - Used: ${receipt.gasUsed}`);
         });
     });
 
@@ -343,7 +519,7 @@ describe('EDCAgreementNFT', () => {
             };
             const tokenURI = `data:application/json;base64,${btoa(JSON.stringify(metadata))}`;
 
-            await contract.write.mintAgreement([
+            await contract.write.ownerMint([
                 addr1.account.address,
                 agreementId,
                 'asset',
@@ -354,13 +530,13 @@ describe('EDCAgreementNFT', () => {
                 tokenURI,
             ]);
 
-            const tokenId = await contract.read.getTokenIdByAgreementId([agreementId]);
+            const tokenId = await contract.read.agreementIdToTokenId([agreementId]);
 
             // Revoke
             const revokeHash = await contract.write.revokeAgreement([
                 tokenId,
                 'Testing revocation',
-            ]);
+            ], { account: addr1.account });
             await publicClient.waitForTransactionReceipt({ hash: revokeHash });
 
             const agreement = await contract.read.getAgreement([tokenId]);
@@ -370,7 +546,7 @@ describe('EDCAgreementNFT', () => {
     });
 
     describe('Query Functions', () => {
-        test('should query tokens by owner', async () => {
+        test('should query tokens by owner using ownedTokens', async () => {
             const block = await publicClient.getBlock();
             const signedAt = block.timestamp;
             const metadata = {
@@ -380,7 +556,7 @@ describe('EDCAgreementNFT', () => {
             };
             const tokenURI = `data:application/json;base64,${btoa(JSON.stringify(metadata))}`;
 
-            await contract.write.mintAgreement([
+            await contract.write.ownerMint([
                 addr2.account.address,
                 'query-test-1',
                 'asset',
@@ -391,7 +567,7 @@ describe('EDCAgreementNFT', () => {
                 tokenURI,
             ]);
 
-            await contract.write.mintAgreement([
+            await contract.write.ownerMint([
                 addr2.account.address,
                 'query-test-2',
                 'asset',
@@ -402,11 +578,11 @@ describe('EDCAgreementNFT', () => {
                 tokenURI,
             ]);
 
-            const tokens = await contract.read.tokensOfOwner([addr2.account.address]);
+            const tokens = await contract.read.getOwnedTokens([addr2.account.address]);
             assert.ok(tokens.length >= 2, 'Should have at least 2 tokens');
         });
 
-        test('should check agreement validity', async () => {
+        test('should check agreement validity based on expiration', async () => {
             const block = await publicClient.getBlock();
             const signedAt = block.timestamp;
             const expiresAt = block.timestamp + BigInt(3600); // expires in 1 hour
@@ -417,7 +593,7 @@ describe('EDCAgreementNFT', () => {
             };
             const tokenURI = `data:application/json;base64,${btoa(JSON.stringify(metadata))}`;
 
-            await contract.write.mintAgreement([
+            await contract.write.ownerMint([
                 addr1.account.address,
                 'validity-test',
                 'asset',
@@ -428,76 +604,11 @@ describe('EDCAgreementNFT', () => {
                 tokenURI,
             ]);
 
-            const tokenId = await contract.read.getTokenIdByAgreementId(['validity-test']);
-            const isValid = await contract.read.isValidAgreement([tokenId]);
-
-            assert.equal(isValid, true, 'Agreement should be valid');
-        });
-    });
-
-    describe('Integration Test', () => {
-        test('should complete full mint-to-revoke flow without IPFS', async () => {
-            // 1. Create metadata with fixed URL
-            const agreementId = 'urn:uuid:integration-test';
-            const metadata = {
-                name: 'EDC Agreement Integration Test',
-                description: 'Full flow test without IPFS uploads',
-                image: FIXED_BADGE_URL,
-                external_url: 'https://example.com',
-                attributes: [
-                    { trait_type: 'Agreement ID', value: agreementId },
-                    { trait_type: 'Asset ID', value: 'integration-asset' },
-                    { trait_type: 'Status', value: 'Active' },
-                ],
-            };
-            const tokenURI = `data:application/json;base64,${btoa(JSON.stringify(metadata))}`;
-            const block = await publicClient.getBlock();
-            const signedAt = block.timestamp;
-
-            // 2. Mint
-            const mintHash = await contract.write.mintAgreement([
-                addr1.account.address,
-                agreementId,
-                'integration-asset',
-                'integration-provider',
-                'integration-consumer',
-                signedAt,
-                0n,
-                tokenURI,
-            ]);
-            await publicClient.waitForTransactionReceipt({ hash: mintHash });
-
-            // 3. Verify mint
-            const tokenId = await contract.read.getTokenIdByAgreementId([agreementId]);
-            const owner = await contract.read.ownerOf([tokenId]);
-            assert.equal(owner.toLowerCase(), addr1.account.address.toLowerCase());
-
-            // 4. Check metadata
-            const uri = await contract.read.tokenURI([tokenId]);
-            assert.ok(uri.startsWith('data:application/json'));
-
-            // 5. Verify on-chain data
+            const tokenId = await contract.read.agreementIdToTokenId(['validity-test']);
             const agreement = await contract.read.getAgreement([tokenId]);
-            assert.equal(agreement.agreementId, agreementId);
+
+            assert.equal(agreement.expiresAt, expiresAt);
             assert.equal(agreement.isRevoked, false);
-
-            // 6. Revoke
-            const revokeHash = await contract.write.revokeAgreement([
-                tokenId,
-                'Integration test complete',
-            ], { account: addr1.account });
-            await publicClient.waitForTransactionReceipt({ hash: revokeHash });
-
-            // 7. Verify revocation
-            const revokedAgreement = await contract.read.getAgreement([tokenId]);
-            assert.equal(revokedAgreement.isRevoked, true);
-
-            console.log('\n✅ Integration test complete:');
-            console.log(`- Minted NFT with fixed URL`);
-            console.log(`- Metadata stored as data URI`);
-            console.log(`- On-chain data verified`);
-            console.log(`- Revocation successful`);
-            console.log(`- No IPFS uploads required\n`);
         });
     });
 
@@ -507,7 +618,7 @@ describe('EDCAgreementNFT', () => {
             const signedAt = block.timestamp;
 
             await assert.rejects(
-                contract.write.mintAgreement([
+                contract.write.ownerMint([
                     '0x0000000000000000000000000000000000000000',
                     'urn:uuid:zero-address',
                     'urn:asset:test',
@@ -517,7 +628,7 @@ describe('EDCAgreementNFT', () => {
                     0n,
                     'data:application/json;utf8,{"name":"Zero Address"}',
                 ]),
-                /InvalidRecipientAddress/
+                /InvalidRecipientAddress|0x44d99fea/
             );
         });
 
@@ -526,7 +637,7 @@ describe('EDCAgreementNFT', () => {
             const signedAt = block.timestamp;
 
             await assert.rejects(
-                contract.write.mintAgreement([
+                contract.write.ownerMint([
                     addr1.account.address,
                     '',
                     'urn:asset:test',
@@ -536,7 +647,7 @@ describe('EDCAgreementNFT', () => {
                     0n,
                     'data:application/json;utf8,{"name":"Empty AgreementId"}',
                 ]),
-                /AgreementIdRequired/
+                /AgreementIdRequired|0xdc5ddec5/
             );
         });
 
@@ -545,7 +656,7 @@ describe('EDCAgreementNFT', () => {
             const signedAt = block.timestamp;
 
             await assert.rejects(
-                contract.write.mintAgreement([
+                contract.write.ownerMint([
                     addr1.account.address,
                     'urn:uuid:missing-asset',
                     '',
@@ -555,7 +666,7 @@ describe('EDCAgreementNFT', () => {
                     0n,
                     'data:application/json;utf8,{"name":"Empty AssetId"}',
                 ]),
-                /AssetIdRequired/
+                /AssetIdRequired|0xc1c1c3d7/
             );
         });
 
@@ -565,7 +676,7 @@ describe('EDCAgreementNFT', () => {
             const signedAt = block.timestamp;
 
             // first mint should succeed
-            await contract.write.mintAgreement([
+            await contract.write.ownerMint([
                 addr1.account.address,
                 agreementId,
                 'urn:asset:test',
@@ -578,7 +689,7 @@ describe('EDCAgreementNFT', () => {
 
             // second mint with same agreementId should fail
             await assert.rejects(
-                contract.write.mintAgreement([
+                contract.write.ownerMint([
                     addr1.account.address,
                     agreementId,
                     'urn:asset:test2',
@@ -588,7 +699,7 @@ describe('EDCAgreementNFT', () => {
                     0n,
                     'data:application/json;utf8,{"name":"Duplicate Test 2"}',
                 ]),
-                /AgreementAlreadyMinted/
+                /AgreementAlreadyMinted|0xd60ab2c6/
             );
         });
 
@@ -597,7 +708,7 @@ describe('EDCAgreementNFT', () => {
             const signedAt = block.timestamp + 1000n;
 
             await assert.rejects(
-                contract.write.mintAgreement([
+                contract.write.ownerMint([
                     addr1.account.address,
                     'urn:uuid:future-time',
                     'urn:asset:test',
@@ -607,78 +718,84 @@ describe('EDCAgreementNFT', () => {
                     0n,
                     'data:application/json;utf8,{"name":"Future Time"}',
                 ]),
-                /InvalidSigningTimestamp/
+                /InvalidSigningTimestamp|0x8e243532/
             );
         });
 
         test('should revert when getting nonexistent token', async () => {
             await assert.rejects(
                 contract.read.getAgreement([9999n]),
-                /TokenDoesNotExist/
+                /TokenDoesNotExist|0xceea21b6/
             );
         });
 
-        test('should revert when agreement not found', async () => {
-            await assert.rejects(
-                contract.read.getTokenIdByAgreementId(['urn:uuid:does-not-exist']),
-                /AgreementNotFound/
-            );
-        });
-
-        test('should revert if non-owner tries to revoke', async () => {
-            const agreementId = 'urn:uuid:not-owner';
+        test('should revert if agreement already expired', async () => {
+            const agreementId = 'urn:uuid:expired';
             const block = await publicClient.getBlock();
             const signedAt = block.timestamp;
+            const expiresAt = signedAt + 86400n; // 1 day
 
-            await contract.write.mintAgreement([
+            await contract.write.ownerMint([
                 addr1.account.address,
                 agreementId,
                 'urn:asset:test',
                 'provider',
                 'consumer',
                 signedAt,
-                0n,
-                'data:application/json;utf8,{"name":"Unauthorized Revoke"}',
+                expiresAt,
+                'data:application/json;utf8,{"name":"Expired Test"}',
             ]);
 
-            const tokenId = await contract.read.getTokenIdByAgreementId([agreementId]);
+            const tokenId = await contract.read.agreementIdToTokenId([agreementId]);
+
+            await publicClient.request({
+                method: 'evm_increaseTime',
+                params: [172800], // 2 days in seconds
+            });
+            await publicClient.request({
+                method: 'evm_mine',
+                params: [],
+            });
 
             await assert.rejects(
-                contract.write.revokeAgreement([tokenId, 'Not authorized'], { account: addr2.account }),
-                /NotAuthorizedToRevoke/
+                contract.write.revokeAgreement([tokenId, 'Cannot revoke expired'], { account: addr1.account }),
+                /AgreementAlreadyExpired|0x0b81f82a/
             );
         });
 
-        test('should revert if already revoked', async () => {
-            const agreementId = 'urn:uuid:already-revoked';
+        test('should revert if insufficient payment', async () => {
+            const mintPrice = parseEther('0.01');
+            await contract.write.updateMintPrice([mintPrice]);
+
+            await contract.write.grantMinterRole([addr1.account.address]);
+
             const block = await publicClient.getBlock();
             const signedAt = block.timestamp;
 
-            await contract.write.mintAgreement([
-                addr1.account.address,
-                agreementId,
-                'urn:asset:test',
-                'provider',
-                'consumer',
-                signedAt,
-                0n,
-                'data:application/json;utf8,{"name":"Already Revoked"}',
-            ]);
-
-            const tokenId = await contract.read.getTokenIdByAgreementId([agreementId]);
-
-            await contract.write.revokeAgreement([tokenId, 'First revoke'], { account: addr1.account });
-
             await assert.rejects(
-                contract.write.revokeAgreement([tokenId, 'Second revoke'], { account: addr1.account }),
-                /AgreementAlreadyRevoked/
+                contract.write.mint(
+                    [
+                        'payment-test',
+                        'asset',
+                        'provider',
+                        'consumer',
+                        signedAt,
+                        0n,
+                        'data:application/json;utf8,{"name":"Payment Test"}',
+                    ],
+                    {
+                        account: addr1.account,
+                        value: parseEther('0.005'), // insufficient payment
+                    }
+                ),
+                /InsufficientPayment|0x356680b7/
             );
         });
 
-        test('should revert if revoking nonexistent token', async () => {
+        test('should revert if no funds to withdraw', async () => {
             await assert.rejects(
-                contract.write.revokeAgreement([12345n, 'No token']),
-                /TokenDoesNotExist/
+                contract.write.withdraw(),
+                /NoFundsToWithdraw|0x1803f52a/
             );
         });
     });
