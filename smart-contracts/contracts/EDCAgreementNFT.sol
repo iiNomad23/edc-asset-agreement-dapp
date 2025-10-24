@@ -98,9 +98,9 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, AccessControl, ReentrancyG
 
     /// @dev Admin can revoke any agreement, minters can only revoke agreements they own
     modifier canRevokeToken(uint256 tokenId) {
-        bool isAdmin = hasRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        bool callerIsAdmin = hasRole(DEFAULT_ADMIN_ROLE, msg.sender);
         bool isTokenOwner = _ownerOf(tokenId) == msg.sender;
-        if (!isAdmin && !isTokenOwner) {
+        if (!callerIsAdmin && !isTokenOwner) {
             revert NotAuthorizedToRevoke();
         }
         _;
