@@ -119,37 +119,6 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, AccessControl, ReentrancyG
         _;
     }
 
-    modifier validRecipient(address recipient) {
-        if (recipient == address(0)) {
-            revert InvalidRecipientAddress();
-        }
-        _;
-    }
-
-    modifier validAgreementId(string memory agreementId) {
-        if (bytes(agreementId).length == 0) {
-            revert AgreementIdRequired();
-        }
-        if (agreementIdToTokenId[agreementId] != 0) {
-            revert AgreementAlreadyMinted();
-        }
-        _;
-    }
-
-    modifier validAssetId(string memory assetId) {
-        if (bytes(assetId).length == 0) {
-            revert AssetIdRequired();
-        }
-        _;
-    }
-
-    modifier validSigningTime(uint256 signedAt) {
-        if (signedAt > block.timestamp) {
-            revert InvalidSigningTimestamp();
-        }
-        _;
-    }
-
     constructor() ERC721("EDC Agreement NFT", "EDC_AGR") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
@@ -275,6 +244,22 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, AccessControl, ReentrancyG
     }
 
     /**
+     * @dev Returns the agreement metadata for a given token ID
+     * @param tokenId The ID of the token
+     */
+    function getAgreement(uint256 tokenId) external view tokenExists(tokenId) returns (AgreementMetadata memory) {
+        return agreements[tokenId];
+    }
+
+    /**
+     * @dev Returns all token IDs owned by a given address
+     * @param owner Owner of the tokens
+     */
+    function getOwnedTokens(address owner) public view returns (uint256[] memory) {
+        return ownedTokens[owner];
+    }
+
+    /**
      * @dev Admin can grant minter role to an address
      * @param account The address to grant minter role to
      */
@@ -318,7 +303,23 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, AccessControl, ReentrancyG
         uint256 signedAt,
         uint256 expiresAt,
         string memory _tokenURI
-    ) private validRecipient(recipient) validAgreementId(agreementId) validAssetId(assetId) validSigningTime(signedAt) returns (uint256) {
+    ) private returns (uint256) {
+        if (recipient == address(0)) {
+            revert InvalidRecipientAddress();
+        }
+        if (bytes(agreementId).length == 0) {
+            revert AgreementIdRequired();
+        }
+        if (agreementIdToTokenId[agreementId] != 0) {
+            revert AgreementAlreadyMinted();
+        }
+        if (bytes(assetId).length == 0) {
+            revert AssetIdRequired();
+        }
+        if (signedAt > block.timestamp) {
+            revert InvalidSigningTimestamp();
+        }
+
         uint256 tokenId = totalSupply + 1;
         totalSupply = tokenId;
 
