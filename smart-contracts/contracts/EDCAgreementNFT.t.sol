@@ -28,8 +28,9 @@ contract EDCAgreementNFTTest is Test {
     function testDeployment() public view {
         assertEq(nft.name(), "EDC Agreement NFT");
         assertEq(nft.symbol(), "EDC_AGR");
-        assertEq(nft.owner(), owner);
+        assertTrue(nft.isAdmin(owner));
         assertEq(nft.totalSupply(), 0);
+        assertEq(nft.mintPrice(), 0);
     }
 
     function testMintWithFixedURL() public {
@@ -44,7 +45,7 @@ contract EDCAgreementNFTTest is Test {
         ));
 
         vm.prank(owner);
-        uint256 tokenId = nft.mintAgreement(
+        uint256 tokenId = nft.ownerMint(
             user1,
             agreementId,
             assetId,
@@ -73,7 +74,7 @@ contract EDCAgreementNFTTest is Test {
                 '"}'
             ));
 
-            nft.mintAgreement(
+            nft.ownerMint(
                 user1,
                 agreementId,
                 "asset",
@@ -88,7 +89,7 @@ contract EDCAgreementNFTTest is Test {
         vm.stopPrank();
 
         assertEq(nft.totalSupply(), 3);
-        assertEq(nft.tokensOfOwner(user1).length, 3);
+        assertEq(nft.getOwnedTokens(user1).length, 3);
     }
 
     function testFullStorageDataAvailable() public {
@@ -100,7 +101,7 @@ contract EDCAgreementNFTTest is Test {
         string memory tokenURI = "data:application/json;utf8,{\"name\":\"Test\"}";
 
         vm.prank(owner);
-        uint256 tokenId = nft.mintAgreement(
+        uint256 tokenId = nft.ownerMint(
             user1,
             agreementId,
             assetId,
@@ -188,7 +189,7 @@ contract EDCAgreementNFTTest is Test {
         uint256 gasBefore = gasleft();
 
         vm.prank(owner);
-        nft.mintAgreement(
+        nft.ownerMint(
             user1,
             agreementId,
             assetId,
@@ -203,7 +204,7 @@ contract EDCAgreementNFTTest is Test {
 
         emit log_named_uint("Gas used for minting (Full Storage + Data URI)", gasUsed);
 
-        // Full storage should use ~2M gas
+        // Full storage should use <2M gas
         assertLt(gasUsed, 2000000, "Gas usage should be lower than 2M");
     }
 
@@ -219,7 +220,7 @@ contract EDCAgreementNFTTest is Test {
         uint256 gasBefore = gasleft();
 
         vm.prank(owner);
-        nft.mintAgreement(
+        nft.ownerMint(
             user1,
             agreementId,
             assetId,
@@ -234,15 +235,15 @@ contract EDCAgreementNFTTest is Test {
 
         emit log_named_uint("Gas used for minting (IPFS)", gasUsed);
 
-        // Full storage should use ~500k gas
-        assertLt(gasUsed, 500000, "Gas usage should be lower than 2M");
+        // IPFS should use <500k gas
+        assertLt(gasUsed, 500000, "Gas usage should be lower than 500k");
     }
 
     function testRevokeAgreement() public {
         string memory tokenURI = "data:application/json;utf8,{\"name\":\"Revoke Test\"}";
 
         vm.prank(owner);
-        uint256 tokenId = nft.mintAgreement(
+        uint256 tokenId = nft.ownerMint(
             user1,
             "revoke-test",
             "asset",
@@ -267,7 +268,7 @@ contract EDCAgreementNFTTest is Test {
 
         vm.startPrank(owner);
 
-        nft.mintAgreement(
+        nft.ownerMint(
             user2,
             "query-1",
             "asset",
@@ -278,7 +279,7 @@ contract EDCAgreementNFTTest is Test {
             tokenURI
         );
 
-        nft.mintAgreement(
+        nft.ownerMint(
             user2,
             "query-2",
             "asset",
@@ -291,10 +292,10 @@ contract EDCAgreementNFTTest is Test {
 
         vm.stopPrank();
 
-        uint256[] memory tokens = nft.tokensOfOwner(user2);
+        uint256[] memory tokens = nft.getOwnedTokens(user2);
         assertEq(tokens.length, 2);
 
-        uint256 tokenId = nft.getTokenIdByAgreementId("query-1");
+        uint256 tokenId = nft.agreementIdToTokenId("query-1");
         assertEq(nft.ownerOf(tokenId), user2);
     }
 
@@ -302,7 +303,7 @@ contract EDCAgreementNFTTest is Test {
         string memory tokenURI = "data:application/json;utf8,{\"name\":\"Validity Test\"}";
 
         vm.prank(owner);
-        uint256 tokenId = nft.mintAgreement(
+        uint256 tokenId = nft.ownerMint(
             user1,
             "validity-test",
             "asset",
@@ -313,13 +314,14 @@ contract EDCAgreementNFTTest is Test {
             tokenURI
         );
 
-        assertTrue(nft.isValidAgreement(tokenId));
-        assertFalse(nft.isExpired(tokenId));
+        EDCAgreementNFT.AgreementMetadata memory agreement = nft.getAgreement(tokenId);
+        assertTrue(agreement.expiresAt > block.timestamp);
+        assertFalse(agreement.isRevoked);
 
         vm.warp(block.timestamp + 366 days);
 
-        assertTrue(nft.isExpired(tokenId));
-        assertFalse(nft.isValidAgreement(tokenId));
+        EDCAgreementNFT.AgreementMetadata memory expiredAgreement = nft.getAgreement(tokenId);
+        assertTrue(expiredAgreement.expiresAt <= block.timestamp);
     }
 
     function testIntegrationFlow() public {
@@ -334,7 +336,7 @@ contract EDCAgreementNFTTest is Test {
 
         // 1. Mint
         vm.prank(owner);
-        uint256 tokenId = nft.mintAgreement(
+        uint256 tokenId = nft.ownerMint(
             user1,
             agreementId,
             "integration-asset",
@@ -354,17 +356,13 @@ contract EDCAgreementNFTTest is Test {
         assertEq(agreement.agreementId, agreementId);
         assertFalse(agreement.isRevoked);
 
-        // 4. Check validity
-        assertTrue(nft.isValidAgreement(tokenId));
-
-        // 5. Revoke
+        // 4. Revoke
         vm.prank(user1);
         nft.revokeAgreement(tokenId, "Integration test complete");
 
-        // 6. Verify revocation
+        // 5. Verify revocation
         EDCAgreementNFT.AgreementMetadata memory revokedAgreement = nft.getAgreement(tokenId);
         assertTrue(revokedAgreement.isRevoked);
-        assertFalse(nft.isValidAgreement(tokenId));
 
         emit log_string("Integration test passed: Mint -> Verify -> Revoke (No IPFS needed)");
     }
@@ -388,7 +386,7 @@ contract EDCAgreementNFTTest is Test {
                 '"}'
             ));
 
-            nft.mintAgreement(
+            nft.ownerMint(
                 user1,
                 string(abi.encodePacked("url-test-", Strings.toString(i))),
                 "asset",
@@ -418,7 +416,7 @@ contract EDCAgreementNFTTest is Test {
         string memory tokenURI = "data:application/json;utf8,{\"name\":\"Fuzz Test\"}";
 
         vm.prank(owner);
-        uint256 tokenId = nft.mintAgreement(
+        uint256 tokenId = nft.ownerMint(
             recipient,
             agreementId,
             assetId,
@@ -432,13 +430,126 @@ contract EDCAgreementNFTTest is Test {
         assertEq(nft.ownerOf(tokenId), recipient);
     }
 
+    function testRoleManagement() public {
+        assertTrue(nft.isAdmin(owner));
+        assertTrue(nft.isMinter(owner));
+
+        vm.prank(owner);
+        nft.grantMinterRole(user1);
+        assertTrue(nft.isMinter(user1));
+
+        vm.prank(owner);
+        nft.revokeMinterRole(user1);
+        assertFalse(nft.isMinter(user1));
+    }
+
+    function testMinterCanMintForSelf() public {
+        vm.prank(owner);
+        nft.grantMinterRole(user1);
+
+        string memory tokenURI = "data:application/json;utf8,{\"name\":\"Minter Test\"}";
+
+        vm.prank(user1);
+        uint256 tokenId = nft.mint(
+            "minter-agreement",
+            "asset",
+            "provider",
+            "consumer",
+            block.timestamp,
+            0,
+            tokenURI
+        );
+
+        assertEq(nft.ownerOf(tokenId), user1);
+    }
+
+    function testRevertNormalMintWithoutMinterRole() public {
+        string memory tokenURI = "data:application/json;utf8,{\"name\":\"No Role Test\"}";
+
+        bytes32 minterRole = keccak256("MINTER_ROLE");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                bytes4(keccak256("AccessControlUnauthorizedAccount(address,bytes32)")),
+                user1,
+                minterRole
+            )
+        );
+        vm.prank(user1);
+        nft.mint(
+            "no-role-agreement",
+            "asset",
+            "provider",
+            "consumer",
+            block.timestamp,
+            0,
+            tokenURI
+        );
+    }
+
+    function testMintPriceManagement() public {
+        assertEq(nft.mintPrice(), 0);
+
+        vm.prank(owner);
+        nft.updateMintPrice(0.01 ether);
+        assertEq(nft.mintPrice(), 0.01 ether);
+
+        vm.prank(owner);
+        nft.grantMinterRole(user1);
+
+        string memory tokenURI = "data:application/json;utf8,{\"name\":\"Paid Mint\"}";
+
+        vm.deal(user1, 1 ether);
+        vm.prank(user1);
+        nft.mint{value: 0.01 ether}(
+            "paid-agreement",
+            "asset",
+            "provider",
+            "consumer",
+            block.timestamp,
+            0,
+            tokenURI
+        );
+
+        assertEq(address(nft).balance, 0.01 ether);
+    }
+
+    function testWithdraw() public {
+        vm.prank(owner);
+        nft.updateMintPrice(0.01 ether);
+
+        vm.prank(owner);
+        nft.grantMinterRole(user1);
+
+        string memory tokenURI = "data:application/json;utf8,{\"name\":\"Withdraw Test\"}";
+
+        vm.deal(user1, 1 ether);
+        vm.prank(user1);
+        nft.mint{value: 0.01 ether}(
+            "withdraw-agreement",
+            "asset",
+            "provider",
+            "consumer",
+            block.timestamp,
+            0,
+            tokenURI
+        );
+
+        uint256 ownerBalanceBefore = owner.balance;
+
+        vm.prank(owner);
+        nft.withdraw();
+
+        assertEq(address(nft).balance, 0);
+        assertEq(owner.balance, ownerBalanceBefore + 0.01 ether);
+    }
+
     function testRevertInvalidRecipientAddress() public {
         string memory tokenURI = "data:application/json;utf8,{\"name\":\"Invalid Recipient\"}";
 
         vm.expectRevert(abi.encodeWithSelector(EDCAgreementNFT.InvalidRecipientAddress.selector));
 
         vm.prank(owner);
-        nft.mintAgreement(
+        nft.ownerMint(
             address(0),
             "urn:uuid:invalid-recipient",
             "urn:asset:test",
@@ -456,7 +567,7 @@ contract EDCAgreementNFTTest is Test {
         vm.expectRevert(abi.encodeWithSelector(EDCAgreementNFT.AgreementIdRequired.selector));
 
         vm.prank(owner);
-        nft.mintAgreement(
+        nft.ownerMint(
             user1,
             "",
             "urn:asset:test",
@@ -474,7 +585,7 @@ contract EDCAgreementNFTTest is Test {
         vm.expectRevert(abi.encodeWithSelector(EDCAgreementNFT.AssetIdRequired.selector));
 
         vm.prank(owner);
-        nft.mintAgreement(
+        nft.ownerMint(
             user1,
             "urn:uuid:empty-asset",
             "",
@@ -490,7 +601,7 @@ contract EDCAgreementNFTTest is Test {
         string memory tokenURI = "data:application/json;utf8,{\"name\":\"Duplicate Agreement\"}";
 
         vm.startPrank(owner);
-        nft.mintAgreement(
+        nft.ownerMint(
             user1,
             "urn:uuid:duplicate",
             "urn:asset:duplicate",
@@ -502,7 +613,7 @@ contract EDCAgreementNFTTest is Test {
         );
 
         vm.expectRevert(abi.encodeWithSelector(EDCAgreementNFT.AgreementAlreadyMinted.selector));
-        nft.mintAgreement(
+        nft.ownerMint(
             user2,
             "urn:uuid:duplicate",
             "urn:asset:duplicate2",
@@ -521,7 +632,7 @@ contract EDCAgreementNFTTest is Test {
         vm.expectRevert(abi.encodeWithSelector(EDCAgreementNFT.InvalidSigningTimestamp.selector));
 
         vm.prank(owner);
-        nft.mintAgreement(
+        nft.ownerMint(
             user1,
             "urn:uuid:future-timestamp",
             "urn:asset:future",
@@ -538,16 +649,11 @@ contract EDCAgreementNFTTest is Test {
         nft.getAgreement(999);
     }
 
-    function testRevertAgreementNotFound() public {
-        vm.expectRevert(abi.encodeWithSelector(EDCAgreementNFT.AgreementNotFound.selector));
-        nft.getTokenIdByAgreementId("urn:uuid:does-not-exist");
-    }
-
     function testRevertNotAuthorizedToRevoke() public {
         string memory tokenURI = "data:application/json;utf8,{\"name\":\"Unauthorized Revoke\"}";
 
         vm.prank(owner);
-        uint256 tokenId = nft.mintAgreement(
+        uint256 tokenId = nft.ownerMint(
             user1,
             "urn:uuid:unauthorized",
             "urn:asset:test",
@@ -567,7 +673,7 @@ contract EDCAgreementNFTTest is Test {
         string memory tokenURI = "data:application/json;utf8,{\"name\":\"Already Revoked\"}";
 
         vm.prank(owner);
-        uint256 tokenId = nft.mintAgreement(
+        uint256 tokenId = nft.ownerMint(
             user1,
             "urn:uuid:already-revoked",
             "urn:asset:test",
@@ -589,5 +695,57 @@ contract EDCAgreementNFTTest is Test {
     function testRevertRevokeNonexistentToken() public {
         vm.expectRevert(abi.encodeWithSelector(EDCAgreementNFT.TokenDoesNotExist.selector));
         nft.revokeAgreement(12345, "No token");
+    }
+
+    function testRevertAgreementAlreadyExpired() public {
+        string memory tokenURI = "data:application/json;utf8,{\"name\":\"Expired Test\"}";
+
+        vm.prank(owner);
+        uint256 tokenId = nft.ownerMint(
+            user1,
+            "urn:uuid:expired",
+            "urn:asset:test",
+            "provider",
+            "consumer",
+            block.timestamp,
+            block.timestamp + 1 days,
+            tokenURI
+        );
+
+        // Fast forward past expiration
+        vm.warp(block.timestamp + 2 days);
+
+        vm.expectRevert(abi.encodeWithSelector(EDCAgreementNFT.AgreementAlreadyExpired.selector));
+        vm.prank(user1);
+        nft.revokeAgreement(tokenId, "Cannot revoke expired");
+    }
+
+    function testRevertInsufficientPayment() public {
+        vm.prank(owner);
+        nft.updateMintPrice(0.01 ether);
+
+        vm.prank(owner);
+        nft.grantMinterRole(user1);
+
+        string memory tokenURI = "data:application/json;utf8,{\"name\":\"Payment Test\"}";
+
+        vm.deal(user1, 1 ether);
+        vm.expectRevert(abi.encodeWithSelector(EDCAgreementNFT.InsufficientPayment.selector));
+        vm.prank(user1);
+        nft.mint{value: 0.005 ether}(
+            "payment-test",
+            "asset",
+            "provider",
+            "consumer",
+            block.timestamp,
+            0,
+            tokenURI
+        );
+    }
+
+    function testRevertNoFundsToWithdraw() public {
+        vm.expectRevert(abi.encodeWithSelector(EDCAgreementNFT.NoFundsToWithdraw.selector));
+        vm.prank(owner);
+        nft.withdraw();
     }
 }

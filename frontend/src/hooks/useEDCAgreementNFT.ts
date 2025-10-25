@@ -50,9 +50,8 @@ export function useEDCAgreementNFT() {
         const contractCall = {
             address: contractAddress,
             abi: EDC_AGREEMENT_NFT_ABI,
-            functionName: 'mintAgreement',
+            functionName: 'mint',
             args: [
-                params.recipient,
                 params.agreementId,
                 params.assetId,
                 params.providerId,
@@ -117,7 +116,7 @@ export function useAgreementTokens(address?: Address) {
     const { data, isLoading } = useReadContract({
         address: contractAddress,
         abi: EDC_AGREEMENT_NFT_ABI,
-        functionName: 'tokensOfOwner',
+        functionName: 'getOwnedTokens',
         args: address ? [address] : undefined,
         query: {
             enabled: Boolean(address),

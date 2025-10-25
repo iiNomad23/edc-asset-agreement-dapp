@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.28;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
@@ -11,21 +12,27 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
  * @dev ERC-721 NFT contract for Eclipse Dataspace Components (EDC) contract agreements
  * Each NFT represents a signed contract agreement between a provider and consumer
  */
-contract EDCAgreementNFT is ERC721, ERC721URIStorage, Ownable {
+contract EDCAgreementNFT is ERC721, ERC721URIStorage, AccessControl, ReentrancyGuard {
     using Strings for uint256;
 
     // Custom errors for better gas efficiency
     error InvalidRecipientAddress();
     error AgreementIdRequired();
     error AssetIdRequired();
-    error AgreementAlreadyMinted();
     error InvalidSigningTimestamp();
     error TokenDoesNotExist();
     error NotAuthorizedToRevoke();
+    error AgreementAlreadyMinted();
     error AgreementAlreadyRevoked();
-    error AgreementNotFound();
+    error AgreementAlreadyExpired();
+    error TransferFailed();
+    error NoFundsToWithdraw();
+    error InsufficientPayment();
 
-    uint256 private _tokenIdCounter = 1; // START AT 1 to avoid conflict with default mapping value
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+
+    uint256 public totalSupply = 0;
+    uint256 public mintPrice = 0 ether;
 
     struct AgreementMetadata {
         string agreementId;
@@ -41,8 +48,7 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, Ownable {
 
     mapping(uint256 => AgreementMetadata) public agreements;
     mapping(string => uint256) public agreementIdToTokenId;
-    mapping(address => uint256[]) private _ownedTokens;
-    mapping(string => bool) public revokedAgreements;
+    mapping(address => uint256[]) public ownedTokens;
 
     event AgreementMinted(
         uint256 indexed tokenId,
@@ -70,10 +76,56 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, Ownable {
         address indexed to
     );
 
-    constructor() ERC721("EDC Agreement NFT", "EDC_AGR") Ownable(msg.sender) {}
+    event MintPriceUpdated(
+        uint256 indexed oldPrice,
+        uint256 indexed newPrice,
+        address indexed updater
+    );
+
+    event FundsWithdrawn(
+        address indexed to,
+        uint256 amount
+    );
+
+    modifier tokenExists(uint256 tokenId) {
+        if (_ownerOf(tokenId) == address(0)) {
+            revert TokenDoesNotExist();
+        }
+        _;
+    }
+
+    /// @dev Admin can revoke any agreement, minters can only revoke agreements they own
+    modifier canRevokeToken(uint256 tokenId) {
+        bool callerIsAdmin = hasRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        bool isTokenOwner = _ownerOf(tokenId) == msg.sender;
+        if (!callerIsAdmin && !isTokenOwner) {
+            revert NotAuthorizedToRevoke();
+        }
+        _;
+    }
+
+    modifier notExpired(uint256 tokenId) {
+        uint256 expiresAt = agreements[tokenId].expiresAt;
+        if (expiresAt != 0 && expiresAt <= block.timestamp) {
+            revert AgreementAlreadyExpired();
+        }
+        _;
+    }
+
+    modifier notRevoked(uint256 tokenId) {
+        if (agreements[tokenId].isRevoked) {
+            revert AgreementAlreadyRevoked();
+        }
+        _;
+    }
+
+    constructor() ERC721("EDC Agreement NFT", "EDC_AGR") {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE, msg.sender);
+    }
 
     /**
-     * @dev Mints a new agreement NFT
+     * @dev Owner mint function - allows contract owner to mint for any recipient
      * @param recipient Address to receive the NFT
      * @param agreementId Unique EDC agreement identifier
      * @param assetId ID of the asset in the agreement
@@ -81,9 +133,9 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, Ownable {
      * @param consumerId ID of the data consumer
      * @param signedAt Timestamp when agreement was signed
      * @param expiresAt Timestamp when agreement expires (0 if no expiration)
-     * @param _tokenURI URI pointing to the agreement metadata (IPFS or HTTP)
+     * @param _tokenURI URI pointing to the agreement metadata
      */
-    function mintAgreement(
+    function ownerMint(
         address recipient,
         string memory agreementId,
         string memory assetId,
@@ -92,28 +144,184 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, Ownable {
         uint256 signedAt,
         uint256 expiresAt,
         string memory _tokenURI
-    ) public returns (uint256) {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256) {
+        return _mintAgreement(
+            recipient,
+            agreementId,
+            assetId,
+            providerId,
+            consumerId,
+            signedAt,
+            expiresAt,
+            _tokenURI
+        );
+    }
+
+    /**
+     * @dev Approved minter mint function - allows approved minters to mint only for themselves
+     * @param agreementId Unique EDC agreement identifier
+     * @param assetId ID of the asset in the agreement
+     * @param providerId ID of the data provider
+     * @param consumerId ID of the data consumer
+     * @param signedAt Timestamp when agreement was signed
+     * @param expiresAt Timestamp when agreement expires (0 if no expiration)
+     * @param _tokenURI URI pointing to the agreement metadata
+     */
+    function mint(
+        string memory agreementId,
+        string memory assetId,
+        string memory providerId,
+        string memory consumerId,
+        uint256 signedAt,
+        uint256 expiresAt,
+        string memory _tokenURI
+    ) external payable onlyRole(MINTER_ROLE) nonReentrant returns (uint256) {
+        if (msg.value != mintPrice) {
+            revert InsufficientPayment();
+        }
+
+        return _mintAgreement(
+            msg.sender,
+            agreementId,
+            assetId,
+            providerId,
+            consumerId,
+            signedAt,
+            expiresAt,
+            _tokenURI
+        );
+    }
+
+    /**
+     * @dev Revokes an agreement NFT
+     * @param tokenId ID of the token to revoke
+     * @param reason Reason for revocation
+     */
+    function revokeAgreement(
+        uint256 tokenId,
+        string calldata reason
+    ) external tokenExists(tokenId) canRevokeToken(tokenId) notExpired(tokenId) notRevoked(tokenId) {
+        AgreementMetadata storage agreement = agreements[tokenId];
+
+        agreement.isRevoked = true;
+        agreement.revokedAt = block.timestamp;
+        agreement.revokeReason = reason;
+
+        emit AgreementRevoked(
+            tokenId,
+            agreement.agreementId,
+            msg.sender,
+            block.timestamp,
+            reason
+        );
+    }
+
+    /**
+     * @dev Owner can update mint price (in wei).
+     * @param newPrice Price in wei
+     */
+    function updateMintPrice(uint256 newPrice) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        uint256 old = mintPrice;
+        mintPrice = newPrice;
+        emit MintPriceUpdated(old, newPrice, msg.sender);
+    }
+
+    /**
+     * @dev Owner can withdraw contract balance to an address
+     */
+    function withdraw() external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
+        uint256 balance = address(this).balance;
+        if (balance == 0) {
+            revert NoFundsToWithdraw();
+        }
+
+        (bool success,) = payable(msg.sender).call{value: balance}("");
+        if (!success) {
+            revert TransferFailed();
+        }
+
+        emit FundsWithdrawn(msg.sender, balance);
+    }
+
+    /**
+     * @dev Returns the agreement metadata for a given token ID
+     * @param tokenId The ID of the token
+     */
+    function getAgreement(uint256 tokenId) external view tokenExists(tokenId) returns (AgreementMetadata memory) {
+        return agreements[tokenId];
+    }
+
+    /**
+     * @dev Returns all token IDs owned by a given address
+     * @param owner Owner of the tokens
+     */
+    function getOwnedTokens(address owner) public view returns (uint256[] memory) {
+        return ownedTokens[owner];
+    }
+
+    /**
+     * @dev Admin can grant minter role to an address
+     * @param account The address to grant minter role to
+     */
+    function grantMinterRole(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        grantRole(MINTER_ROLE, account);
+    }
+
+    /**
+     * @dev Admin can revoke minter role from an address
+     * @param account The address to revoke minter role from
+     */
+    function revokeMinterRole(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        revokeRole(MINTER_ROLE, account);
+    }
+
+    /**
+     * @dev Returns true if the account has the MINTER_ROLE.
+     * @param account The address to check.
+     */
+    function isMinter(address account) external view returns (bool) {
+        return hasRole(MINTER_ROLE, account);
+    }
+
+    /**
+     * @dev Returns true if the account has the DEFAULT_ADMIN_ROLE.
+     * @param account The address to check.
+     */
+    function isAdmin(address account) external view returns (bool) {
+        return hasRole(DEFAULT_ADMIN_ROLE, account);
+    }
+
+    /**
+     * @dev Internal function to mint a new agreement NFT
+     */
+    function _mintAgreement(
+        address recipient,
+        string memory agreementId,
+        string memory assetId,
+        string memory providerId,
+        string memory consumerId,
+        uint256 signedAt,
+        uint256 expiresAt,
+        string memory _tokenURI
+    ) private returns (uint256) {
         if (recipient == address(0)) {
             revert InvalidRecipientAddress();
         }
         if (bytes(agreementId).length == 0) {
             revert AgreementIdRequired();
         }
-        if (bytes(assetId).length == 0) {
-            revert AssetIdRequired();
-        }
         if (agreementIdToTokenId[agreementId] != 0) {
             revert AgreementAlreadyMinted();
+        }
+        if (bytes(assetId).length == 0) {
+            revert AssetIdRequired();
         }
         if (signedAt > block.timestamp) {
             revert InvalidSigningTimestamp();
         }
 
-        uint256 tokenId = _tokenIdCounter;
-        _tokenIdCounter++;
-
-        _safeMint(recipient, tokenId);
-        _setTokenURI(tokenId, _tokenURI);
+        uint256 tokenId = totalSupply + 1;
+        totalSupply = tokenId;
 
         agreements[tokenId] = AgreementMetadata({
             agreementId: agreementId,
@@ -128,7 +336,10 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, Ownable {
         });
 
         agreementIdToTokenId[agreementId] = tokenId;
-        _ownedTokens[recipient].push(tokenId);
+        ownedTokens[recipient].push(tokenId);
+
+        _safeMint(recipient, tokenId);
+        _setTokenURI(tokenId, _tokenURI);
 
         emit AgreementMinted(
             tokenId,
@@ -145,136 +356,10 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, Ownable {
     }
 
     /**
-     * @dev Revokes an agreement NFT
-     * @param tokenId Token ID to revoke
-     */
-    function revokeAgreement(uint256 tokenId, string memory reason) public {
-        if (_ownerOf(tokenId) == address(0)) {
-            revert TokenDoesNotExist();
-        }
-        if (_ownerOf(tokenId) != msg.sender && owner() != msg.sender) {
-            revert NotAuthorizedToRevoke();
-        }
-        if (agreements[tokenId].isRevoked) {
-            revert AgreementAlreadyRevoked();
-        }
-
-        AgreementMetadata storage agreement = agreements[tokenId];
-        agreement.isRevoked = true;
-        agreement.revokedAt = block.timestamp;
-        agreement.revokeReason = reason;
-
-        revokedAgreements[agreement.agreementId] = true;
-
-        emit AgreementRevoked(
-            tokenId,
-            agreement.agreementId,
-            msg.sender,
-            block.timestamp,
-            reason
-        );
-    }
-
-    /**
-     * @dev Returns token IDs owned by an address
-     * @param owner Address to query
-     */
-    function tokensOfOwner(address owner) external view returns (uint256[] memory) {
-        return _ownedTokens[owner];
-    }
-
-    /**
-     * @dev Gets agreement metadata by token ID
-     * @param tokenId Token ID to query
-     */
-    function getAgreement(uint256 tokenId) external view returns (AgreementMetadata memory) {
-        if (_ownerOf(tokenId) == address(0)) {
-            revert TokenDoesNotExist();
-        }
-        return agreements[tokenId];
-    }
-
-    /**
-     * @dev Gets token ID by agreement ID
-     * @param agreementId Agreement ID to query
-     */
-    function getTokenIdByAgreementId(string memory agreementId) external view returns (uint256) {
-        uint256 tokenId = agreementIdToTokenId[agreementId];
-        if (tokenId == 0) {
-            revert AgreementNotFound();
-        }
-        return tokenId;
-    }
-
-    /**
-     * @dev Checks if an agreement is valid (not revoked and not expired)
-     * @param tokenId Token ID to check
-     */
-    function isValidAgreement(uint256 tokenId) external view returns (bool) {
-        if (_ownerOf(tokenId) == address(0)) {
-            revert TokenDoesNotExist();
-        }
-
-        AgreementMetadata memory agreement = agreements[tokenId];
-
-        if (agreement.isRevoked) {
-            return false;
-        }
-
-        if (agreement.expiresAt > 0 && block.timestamp > agreement.expiresAt) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * @dev Checks if an agreement is expired
-     * @param tokenId Token ID to check
-     */
-    function isExpired(uint256 tokenId) public view returns (bool) {
-        if (_ownerOf(tokenId) == address(0)) {
-            revert TokenDoesNotExist();
-        }
-
-        AgreementMetadata memory agreement = agreements[tokenId];
-
-        if (agreement.expiresAt == 0) {
-            return false;
-        }
-
-        return block.timestamp > agreement.expiresAt;
-    }
-
-    /**
-     * @dev Returns total number of tokens minted
-     */
-    function totalSupply() external view returns (uint256) {
-        return _tokenIdCounter - 1; // Subtract 1 because counter starts at 1
-    }
-
-    /**
-     * @dev Override transfer to emit custom event and update owned tokens
-     */
-    function _update(address to, uint256 tokenId, address auth) internal override(ERC721) returns (address){
-        address from = super._update(to, tokenId, auth);
-
-        if (from != address(0) && to != address(0) && from != to) {
-            _removeTokenFromOwner(from, tokenId);
-            _ownedTokens[to].push(tokenId);
-
-            AgreementMetadata memory agreement = agreements[tokenId];
-            emit AgreementTransferred(tokenId, agreement.agreementId, from, to);
-        }
-
-        return from;
-    }
-
-    /**
      * @dev Removes a token from an owner's list
      */
     function _removeTokenFromOwner(address owner, uint256 tokenId) private {
-        uint256[] storage tokens = _ownedTokens[owner];
+        uint256[] storage tokens = ownedTokens[owner];
         for (uint256 i = 0; i < tokens.length; i++) {
             if (tokens[i] == tokenId) {
                 tokens[i] = tokens[tokens.length - 1];
@@ -284,11 +369,27 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, Ownable {
         }
     }
 
+    /**
+     * @dev Override transfer to emit custom event and update owned tokens
+     */
+    function _update(address to, uint256 tokenId, address auth) internal virtual override(ERC721) returns (address) {
+        address from = super._update(to, tokenId, auth);
+
+        if (from != address(0) && to != address(0) && from != to) {
+            _removeTokenFromOwner(from, tokenId);
+            ownedTokens[to].push(tokenId);
+
+            emit AgreementTransferred(tokenId, agreements[tokenId].agreementId, from, to);
+        }
+
+        return from;
+    }
+
     function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
         return super.tokenURI(tokenId);
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721URIStorage) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721URIStorage, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }
