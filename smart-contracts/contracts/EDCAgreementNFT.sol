@@ -94,8 +94,8 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, AccessControl, ReentrancyG
         _;
     }
 
-    /// @dev Admin can revoke any agreement, minters can only revoke agreements they own
-    modifier canRevokeToken(uint256 tokenId) {
+    /// @dev Ensures caller is authorized as either an admin or the token owner
+    modifier onlyAdminOrTokenOwner(uint256 tokenId) {
         bool callerIsAdmin = hasRole(DEFAULT_ADMIN_ROLE, msg.sender);
         bool isTokenOwner = _ownerOf(tokenId) == msg.sender;
         if (!callerIsAdmin && !isTokenOwner) {
@@ -200,7 +200,7 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, AccessControl, ReentrancyG
     function revokeAgreement(
         uint256 tokenId,
         string calldata reason
-    ) external tokenExists(tokenId) canRevokeToken(tokenId) notExpired(tokenId) notRevoked(tokenId) {
+    ) external tokenExists(tokenId) onlyAdminOrTokenOwner(tokenId) notExpired(tokenId) notRevoked(tokenId) {
         AgreementMetadata storage agreement = agreements[tokenId];
 
         agreement.isRevoked = true;
