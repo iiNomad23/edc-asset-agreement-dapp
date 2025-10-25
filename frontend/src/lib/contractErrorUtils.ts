@@ -11,6 +11,31 @@ export const parseContractError = (error: unknown): string => {
             const errorName = revertError.data?.errorName;
 
             switch (errorName) {
+                // Access Control errors
+                case 'AccessControlUnauthorizedAccount':
+                    return 'You do not have permission to perform this action';
+                case 'AccessControlBadConfirmation':
+                    return 'Access control confirmation failed';
+
+                // ERC721 errors
+                case 'ERC721InvalidOwner':
+                    return 'Invalid token owner address';
+                case 'ERC721NonexistentToken':
+                    return 'Token does not exist';
+                case 'ERC721IncorrectOwner':
+                    return 'Incorrect token owner';
+                case 'ERC721InvalidSender':
+                    return 'Invalid sender address';
+                case 'ERC721InvalidReceiver':
+                    return 'Invalid receiver address';
+                case 'ERC721InsufficientApproval':
+                    return 'Insufficient approval for this operation';
+                case 'ERC721InvalidApprover':
+                    return 'Invalid approver address';
+                case 'ERC721InvalidOperator':
+                    return 'Invalid operator address';
+
+                // Custom Agreement errors
                 case 'AgreementAlreadyMinted':
                     return 'This agreement has already been minted as an NFT';
                 case 'InvalidRecipientAddress':
@@ -27,8 +52,17 @@ export const parseContractError = (error: unknown): string => {
                     return 'Not authorized to revoke this agreement';
                 case 'AgreementAlreadyRevoked':
                     return 'Agreement is already revoked';
-                case 'AgreementNotFound':
-                    return 'Agreement not found';
+                case 'AgreementAlreadyExpired':
+                    return 'Agreement has already expired';
+                case 'InsufficientPayment':
+                    return 'Insufficient payment amount';
+                case 'NoFundsToWithdraw':
+                    return 'No funds available to withdraw';
+                case 'TransferFailed':
+                    return 'Transfer failed';
+                case 'ReentrancyGuardReentrantCall':
+                    return 'Reentrant call detected';
+
                 default:
                     if (revertError.reason) {
                         return revertError.reason;
