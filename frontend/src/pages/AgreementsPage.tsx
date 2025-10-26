@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { ContractAgreement } from '@/types/contract.ts';
 import AgreementCard from '@/components/cards/ContractAgreementCard.tsx';
@@ -11,9 +11,11 @@ import { BACKEND_URL } from '@/config/env.ts';
 import { parseContractError, parseTransactionRevertedErrorData } from '@/lib/contractErrorUtils.ts';
 import { DEFAULT_BADGE_IMAGE } from '@/config/constants.ts';
 import { TransactionRevertedError } from '@/errors/TransactionRevertedError.ts';
+import { TransferProcessRequest } from '@/types/transfer.ts';
 
 const AgreementsPage = (): React.ReactNode => {
     const [mintingAgreementId, setMintingAgreementId] = useState<string | null>(null);
+    const [initiatingTransferAgreementId, setInitiatingTransferAgreementId] = useState<string | null>(null);
     const { address, isConnected } = useAccount();
     const chainId = useChainId();
     const { mintAgreement } = useEDCAgreementNFT();
@@ -28,6 +30,64 @@ const AgreementsPage = (): React.ReactNode => {
             return await response.json() as Promise<ContractAgreement[]>;
         },
         refetchInterval: 30000,
+    });
+
+    const transferProcessMutation = useMutation({
+        mutationFn: async (request: TransferProcessRequest) => {
+            const response = await fetch(`${BACKEND_URL}/api/transfers/initiate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    assetId: request.assetId,
+                    contractId: request.contractId,
+                    transferType: request.transferType,
+                }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message ?? 'Failed to initiate transfer');
+            }
+
+            return response.json();
+        },
+        onSuccess: async (data) => {
+            try {
+                const waitResponse = await fetch(
+                    `${BACKEND_URL}/api/transfers/${data['@id']}/wait`,
+                    { method: 'POST' }
+                );
+
+                const result = await waitResponse.json();
+                if (!waitResponse.ok) {
+                    // noinspection ExceptionCaughtLocallyJS
+                    throw new Error(result.message);
+                }
+
+                toast.success('Transfer Initiated Successfully', {
+                    description: `Transfer ID: ${data['@id']}`,
+                    duration: 5000,
+                });
+            } catch (error) {
+                console.error(error);
+                toast.error('Transfer Initiation Delayed', {
+                    description: error instanceof Error ? error.message : 'Check the Transfers page for status',
+                    duration: 5000,
+                });
+            } finally {
+                setInitiatingTransferAgreementId(null);
+            }
+        },
+        onError: (error: Error) => {
+            console.error('Initiating transfer error:', error);
+            toast.error('Initiating Transfer Failed', {
+                description: error.message ?? 'Unknown error',
+                duration: 5000,
+            });
+            setInitiatingTransferAgreementId(null);
+        },
     });
 
     const handleMintNFT = async (agreement: ContractAgreement) => {
@@ -68,6 +128,18 @@ const AgreementsPage = (): React.ReactNode => {
         }
     };
 
+    const handleInitiateTransfer = async (agreement: ContractAgreement) => {
+        setInitiatingTransferAgreementId(agreement['@id']);
+
+        const request: TransferProcessRequest = {
+            assetId: agreement.assetId,
+            contractId: agreement['@id'],
+            transferType: 'HttpData-PULL',
+        };
+
+        transferProcessMutation.mutate(request);
+    };
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center p-8">
@@ -78,6 +150,10 @@ const AgreementsPage = (): React.ReactNode => {
 
     const isMinting = (agreementId: string) => {
         return mintingAgreementId === agreementId;
+    };
+
+    const isInitiatingTransfer = (agreementId: string) => {
+        return initiatingTransferAgreementId === agreementId;
     };
 
     return (
@@ -105,8 +181,9 @@ const AgreementsPage = (): React.ReactNode => {
                             agreement={agreement}
                             isConnected={isConnected}
                             isMinting={isMinting(agreement['@id'])}
+                            isInitiatingTransfer={isInitiatingTransfer(agreement['@id'])}
                             onMint={() => handleMintNFT(agreement)}
-                        />
+                            onInitiateTransfer={() => handleInitiateTransfer(agreement)} />
                     ))}
                 </div>
             ) : (

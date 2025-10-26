@@ -1,6 +1,6 @@
 import React from 'react';
 import { ContractAgreement } from '@/types/contract.ts';
-import { FileText, Loader2 } from 'lucide-react';
+import { ArrowRightLeft, FileText, Loader2, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.tsx';
 import { formatTimestamp } from '@/lib/utils.ts';
@@ -9,10 +9,19 @@ interface AgreementCardProps {
     agreement: ContractAgreement;
     isConnected: boolean;
     isMinting: boolean;
+    isInitiatingTransfer: boolean;
     onMint: () => void;
+    onInitiateTransfer: () => void;
 }
 
-const AgreementCard: React.FC<AgreementCardProps> = ({ agreement, isConnected, isMinting, onMint }) => {
+const AgreementCard: React.FC<AgreementCardProps> = ({
+    agreement,
+    isConnected,
+    isMinting,
+    isInitiatingTransfer,
+    onMint,
+    onInitiateTransfer,
+}) => {
     const formattedDate = formatTimestamp(agreement.contractSigningDate * 1000);
 
     return (
@@ -72,7 +81,29 @@ const AgreementCard: React.FC<AgreementCardProps> = ({ agreement, isConnected, i
                             Minting NFT...
                         </>
                     ) : (
-                        'Mint contract agreement NFT'
+                        <>
+                            <Shield className="w-4 h-4 mr-2" />
+                            Mint contract agreement NFT
+                        </>
+                    )}
+                </Button>
+                <Button
+                    onClick={onInitiateTransfer}
+                    disabled={isInitiatingTransfer}
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                >
+                    {isInitiatingTransfer ? (
+                        <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Initiating Transfer...
+                        </>
+                    ) : (
+                        <>
+                            <ArrowRightLeft className="w-4 h-4 mr-2" />
+                            Initiate Data Transfer
+                        </>
                     )}
                 </Button>
             </CardContent>
