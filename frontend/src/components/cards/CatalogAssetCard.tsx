@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2, Package } from 'lucide-react';
+import { FileText, Loader2, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.tsx';
 import { CatalogAsset } from '@/types';
@@ -49,7 +49,10 @@ const CatalogAssetCard: React.FC<CatalogAssetCardProps> = ({ asset, isSubscribin
                             Negotiating...
                         </>
                     ) : (
-                        'Negotiate contract agreement'
+                        <>
+                            <FileText className="w-4 h-4 mr-2" />
+                            Negotiate contract agreement
+                        </>
                     )}
                 </Button>
             </CardContent>

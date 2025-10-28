@@ -1,4 +1,5 @@
-import { Coins, FileText } from 'lucide-react';
+import { ForwardRefExoticComponent, RefAttributes } from 'react';
+import { ArrowRightLeft, FileText, LucideProps, Package, Shield } from 'lucide-react';
 import {
     Sidebar,
     SidebarContent,
@@ -11,10 +12,23 @@ import {
 } from '@/components/ui/sidebar.tsx';
 import { Link, useLocation } from 'react-router-dom';
 
-const items = [
-    { title: "Assets", url: "/", icon: Coins },
-    { title: "Agreements", url: "/agreements", icon: FileText },
-    { title: "My NFTs", url: "/nfts", icon: FileText },
+type PageItem = {
+    type: 'page';
+    title: string;
+    url: string;
+    icon: ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>>;
+};
+type SeparatorItem = {
+    type: 'separator';
+};
+type SidebarItem = PageItem | SeparatorItem;
+
+const items: SidebarItem[] = [
+    { type: 'page', title: 'Assets', url: '/', icon: Package },
+    { type: 'page', title: 'Agreements', url: '/agreements', icon: FileText },
+    { type: 'separator' },
+    { type: 'page', title: 'Transfers', url: '/transfers', icon: ArrowRightLeft },
+    { type: 'page', title: 'My NFTs', url: '/nfts', icon: Shield },
 ];
 
 function isActivePath(pathname: string, url: string) {
@@ -37,7 +51,11 @@ export function AppSidebar() {
                         <hr />
                         <SidebarGroupContent>
                             <SidebarMenu>
-                                {items.map((item) => {
+                                {items.map((item, index) => {
+                                    if (item.type === 'separator') {
+                                        return <hr key={`sep-${index}`} className="border-border my-1" />;
+                                    }
+
                                     const isActive = isActivePath(location.pathname, item.url);
                                     return (
                                         <SidebarMenuItem key={item.title}>

@@ -16,7 +16,7 @@ import { QueryKey } from '@tanstack/react-query';
 interface AgreementNFTCardProps {
     tokenId: bigint;
     contractAddress: Address;
-    onRevokeClick: (tokenId: bigint, queryKey: QueryKey ) => void;
+    onRevokeClick: (tokenId: bigint, queryKey: QueryKey) => void;
 }
 
 const AgreementNFTCard: React.FC<AgreementNFTCardProps> = ({ tokenId, contractAddress, onRevokeClick }) => {
@@ -50,8 +50,7 @@ const AgreementNFTCard: React.FC<AgreementNFTCardProps> = ({ tokenId, contractAd
     }
 
     const canRevoke = address && !agreement.isRevoked;
-    const isValid = !agreement.isRevoked &&
-        (agreement.expiresAt === 0n || agreement.expiresAt > BigInt(Math.floor(Date.now() / 1000)));
+    const isExpired = agreement.expiresAt !== 0n && agreement.expiresAt <= BigInt(Math.floor(Date.now() / 1000));
 
     return (
         <Card className={agreement.isRevoked ? 'opacity-60 border-red-200' : ''}>
@@ -59,10 +58,10 @@ const AgreementNFTCard: React.FC<AgreementNFTCardProps> = ({ tokenId, contractAd
                 <div className="flex items-start justify-between">
                     <div className="flex-1">
                         <CardTitle className="text-lg flex items-center gap-2">
-                            {isValid ? (
-                                <Shield className="w-5 h-5 text-green-500" />
-                            ) : (
+                            {isExpired ? (
                                 <ShieldAlert className="w-5 h-5 text-red-500" />
+                            ) : (
+                                <Shield className="w-5 h-5 text-green-500" />
                             )}
                             NFT #{tokenId.toString()}
                         </CardTitle>
@@ -123,14 +122,14 @@ const AgreementNFTCard: React.FC<AgreementNFTCardProps> = ({ tokenId, contractAd
                             </div>
                         </CardDescription>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 h-7">
                         {canRevoke && (
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button
                                         variant="ghost"
                                         size="icon-sm"
-                                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                         onClick={() => onRevokeClick(tokenId, queryKey)}
                                     >
                                         <ShieldX className="h-4 w-4" />
@@ -145,7 +144,7 @@ const AgreementNFTCard: React.FC<AgreementNFTCardProps> = ({ tokenId, contractAd
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Badge variant="destructive" className="cursor-help">
-                                        Revoked
+                                        REVOKED
                                     </Badge>
                                 </TooltipTrigger>
                                 <TooltipContent className="max-w-xs">
@@ -163,8 +162,8 @@ const AgreementNFTCard: React.FC<AgreementNFTCardProps> = ({ tokenId, contractAd
                                 </TooltipContent>
                             </Tooltip>
                         ) : (
-                            <Badge variant={isValid ? 'default' : 'destructive'}>
-                                {isValid ? 'Valid' : 'Expired'}
+                            <Badge variant={isExpired ? 'destructive' : 'default'}>
+                                {isExpired ? 'EXPIRED' : 'VALID'}
                             </Badge>
                         )}
                     </div>

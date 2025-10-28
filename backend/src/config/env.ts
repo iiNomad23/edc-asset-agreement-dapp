@@ -24,4 +24,5 @@ export const CONSUMER_CATALOG_QUERY_URL = requireEnv('CONSUMER_CATALOG_QUERY_URL
 export const CONSUMER_MANAGEMENT_URL = requireEnv('CONSUMER_MANAGEMENT_URL');
 export const PROVIDER_ID = requireEnv('PROVIDER_ID');
 export const PROVIDER_QNA_DSP_URL = requireEnv('PROVIDER_QNA_DSP_URL');
+export const PROVIDER_QNA_PUBLIC_API = requireEnv('PROVIDER_QNA_PUBLIC_API');
 export const API_KEY = requireEnv('API_KEY');

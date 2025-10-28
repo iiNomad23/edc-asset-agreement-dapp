@@ -10,10 +10,15 @@ export interface ContractNegotiationRequest {
 export interface ContractNegotiationResponse {
     '@id': string;
     '@type': string;
+    type: string;
+    protocol: string;
     state: string;
+    counterPartyId: string;
+    counterPartyAddress: string;
+    callbackAddresses: any[];
     createdAt: number;
-    errorDetail: string;
     contractAgreementId?: string;
+    errorDetail?: string;
 }
 
 export interface ContractAgreement {

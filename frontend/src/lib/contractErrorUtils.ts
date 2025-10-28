@@ -13,7 +13,7 @@ export const parseContractError = (error: unknown): string => {
             switch (errorName) {
                 // Access Control errors
                 case 'AccessControlUnauthorizedAccount':
-                    return 'You do not have permission to perform this action';
+                    return 'You do not have the permission to mint contract agreements';
                 case 'AccessControlBadConfirmation':
                     return 'Access control confirmation failed';
 

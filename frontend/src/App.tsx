@@ -4,6 +4,7 @@ import AppLayout from '@/components/layout/AppLayout.tsx';
 import AssetsPage from '@/pages/AssetsPage.tsx';
 import AgreementsPage from '@/pages/AgreementsPage.tsx';
 import MyNFTsPage from '@/pages/MyNFTsPage.tsx';
+import DataTransfersPage from '@/pages/TransfersPage.tsx';
 
 const router = createBrowserRouter([
     {
@@ -12,6 +13,7 @@ const router = createBrowserRouter([
         children: [
             { path: '/', element: <AssetsPage /> },
             { path: '/agreements', element: <AgreementsPage /> },
+            { path: '/transfers', element: <DataTransfersPage /> },
             { path: '/nfts', element: <MyNFTsPage /> },
         ],
     },
