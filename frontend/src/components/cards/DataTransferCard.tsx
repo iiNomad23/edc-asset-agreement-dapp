@@ -54,8 +54,8 @@ const DataTransferCard: React.FC<DataTransferCardProps> = ({ transfer, onFetchDa
                 </div>
             </CardHeader>
             <CardContent className="space-y-4 flex-1 flex flex-col justify-end">
-                <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="space-y-2 text-sm">
+                    <div className="grid grid-cols-2 gap-4">
                         <div>
                             <p className="text-muted-foreground mb-1">Transfer ID</p>
                             <p className="font-mono text-xs break-all">{transfer['@id']}</p>
@@ -65,7 +65,7 @@ const DataTransferCard: React.FC<DataTransferCardProps> = ({ transfer, onFetchDa
                             <p className="font-mono text-xs">{formattedDate}</p>
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="grid grid-cols-2 gap-4">
                         <div>
                             <p className="text-muted-foreground mb-1">Asset ID</p>
                             <p className="font-mono text-xs break-all">{transfer.assetId}</p>
@@ -75,13 +75,15 @@ const DataTransferCard: React.FC<DataTransferCardProps> = ({ transfer, onFetchDa
                             <p className="font-mono text-xs">{transfer.type}</p>
                         </div>
                     </div>
-                    <div className="text-sm">
-                        <p className="text-muted-foreground mb-1">Agreement ID</p>
-                        <p className="font-mono text-xs break-all">{transfer.contractId}</p>
-                    </div>
-                    <div className="text-sm">
-                        <p className="text-muted-foreground mb-1">Correlation ID</p>
-                        <p className="font-mono text-xs break-all">{transfer.correlationId ?? 'N/A'}</p>
+                    <div className="space-y-2">
+                        <div>
+                            <p className="text-muted-foreground mb-1">Agreement ID</p>
+                            <p className="font-mono text-xs break-all">{transfer.contractId}</p>
+                        </div>
+                        <div>
+                            <p className="text-muted-foreground mb-1">Correlation ID</p>
+                            <p className="font-mono text-xs break-all">{transfer.correlationId ?? 'N/A'}</p>
+                        </div>
                     </div>
                 </div>
                 <Button
