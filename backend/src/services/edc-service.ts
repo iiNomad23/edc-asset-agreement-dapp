@@ -60,11 +60,7 @@ export class EDCService {
 
                 for (const dataset of datasets) {
                     assets.push({
-                        id: dataset['@id'],
-                        type: dataset['@type'],
-                        description: dataset.description ?? 'No description available',
-                        policy: dataset['odrl:hasPolicy'],
-                        distributions: dataset['dcat:distribution'] ?? []
+                        ...dataset
                     });
                 }
             }
