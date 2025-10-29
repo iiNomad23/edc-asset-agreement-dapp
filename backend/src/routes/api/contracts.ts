@@ -38,24 +38,8 @@ export default async function contractRoutes(fastify: FastifyInstance) {
         }
     });
 
-    fastify.get('/api/contracts/negotiations', async (_request, reply) => {
-        try {
-            return await contractService.getNegotiations();
-        } catch (error) {
-            fastify.log.error(error);
-
-            const errorResponse: EDCError = {
-                error: 'Failed to fetch negotiations',
-                message: error instanceof Error ? error.message : 'Unknown error',
-            };
-
-            return reply.code(500).send(errorResponse);
-        }
-    });
-
-    fastify.post<{
-        Params: NegotiationStatusParams
-    }>('/api/contracts/negotiations/:id/wait', async (request, reply) => {
+    fastify.get<{ Params: NegotiationStatusParams }>('/api/contracts/negotiations/:id/wait',
+        async (request, reply) => {
             try {
                 return await contractService.waitForNegotiationFinalized(request.params.id);
             } catch (error) {
