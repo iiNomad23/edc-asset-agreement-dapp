@@ -1,9 +1,14 @@
+import { OdrlPolicy } from './policy.js';
+
 export interface Asset {
     id: string;
     type: string;
     description: string;
-    policy: any;
+    policy: OdrlPolicy;
     distributions: any[];
+    chainId?: string;
+    chainName?: string;
+    contractAddress?: string;
 }
 
 export interface AssetsResponse {

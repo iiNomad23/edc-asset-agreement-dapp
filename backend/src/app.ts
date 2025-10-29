@@ -9,6 +9,9 @@ import assetsRoutes from './routes/api/assets.js';
 import contractRoutes from './routes/api/contracts.js';
 import { TransferService } from './services/transfer-service.js';
 import transferRoutes from './routes/api/transfers.js';
+import { NFTService } from './services/nft-service.js';
+import { VerificationService } from './services/verification-service.js';
+import dummyServiceRoutes from './routes/api/dummy-service/dummy-service.js';
 
 export async function buildApp() {
     const fastify = Fastify({
@@ -38,15 +41,26 @@ export async function buildApp() {
         contractService,
     );
 
+    const nftService = new NFTService('');
+    const verificationService = new VerificationService(
+        edcService,
+        transferService,
+        contractService,
+        nftService
+    );
+
     fastify.decorate('edcService', edcService);
     fastify.decorate('contractService', contractService);
     fastify.decorate('transferService', transferService);
+    fastify.decorate('nftService', nftService);
+    fastify.decorate('verificationService', verificationService);
 
     await fastify.register(healthRoutes);
     await fastify.register(catalogRoutes);
     await fastify.register(assetsRoutes);
     await fastify.register(contractRoutes);
     await fastify.register(transferRoutes);
+    await fastify.register(dummyServiceRoutes);
 
     return fastify;
 }
@@ -56,5 +70,6 @@ declare module 'fastify' {
         edcService: EDCService;
         contractService: ContractService;
         transferService: TransferService;
+        verificationService: VerificationService;
     }
 }

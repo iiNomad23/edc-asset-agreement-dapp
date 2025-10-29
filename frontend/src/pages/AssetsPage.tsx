@@ -44,8 +44,7 @@ const AssetsPage = (): React.ReactNode => {
         onSuccess: async (data) => {
             try {
                 const response = await fetch(
-                    `${BACKEND_URL}/api/contracts/negotiations/${data['@id']}/wait`,
-                    { method: 'POST' }
+                    `${BACKEND_URL}/api/contracts/negotiations/${data['@id']}/wait`
                 );
 
                 const result = await response.json();

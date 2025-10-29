@@ -42,8 +42,8 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
                 </div>
             </CardHeader>
             <CardContent className="space-y-4 flex-1 flex flex-col justify-end">
-                <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="space-y-2 text-sm">
+                    <div className="grid grid-cols-2 gap-4">
                         <div>
                             <p className="text-muted-foreground mb-1">Agreement ID</p>
                             <p className="font-mono text-xs break-all">{agreement['@id']}</p>
@@ -53,7 +53,7 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
                             <p className="font-mono text-xs">{formattedDate}</p>
                         </div>
                     </div>
-                    <div className="space-y-2 text-sm">
+                    <div className="space-y-2">
                         <div>
                             <p className="text-muted-foreground mb-1">Asset ID</p>
                             <p className="font-mono text-xs break-all">{agreement.assetId}</p>

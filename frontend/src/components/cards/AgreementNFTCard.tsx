@@ -169,38 +169,39 @@ const AgreementNFTCard: React.FC<AgreementNFTCardProps> = ({ tokenId, contractAd
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="space-y-4 flex-1 flex flex-col ">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                        <p className="text-muted-foreground mb-1">Agreement ID</p>
-                        <p className="font-mono text-xs break-all">{agreement.agreementId}</p>
-                    </div>
-                    <div>
-                        <p className="text-muted-foreground mb-1">Signed At</p>
-                        <p className="font-mono text-xs">{formatTimestamp(Number(agreement.signedAt) * 1000)}</p>
-                    </div>
-                </div>
+            <CardContent className="space-y-4 flex-1 flex flex-col justify-end">
                 <div className="space-y-2 text-sm">
-                    <div>
-                        <p className="text-muted-foreground mb-1">Asset ID</p>
-                        <p className="font-mono text-xs break-all">{agreement.assetId}</p>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <p className="text-muted-foreground mb-1">Agreement ID</p>
+                            <p className="font-mono text-xs break-all">{agreement.agreementId}</p>
+                        </div>
+                        <div>
+                            <p className="text-muted-foreground mb-1">Signed At</p>
+                            <p className="font-mono text-xs">{formatTimestamp(Number(agreement.signedAt) * 1000)}</p>
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-muted-foreground mb-1">Provider</p>
-                        <p className="font-mono text-xs break-all">{agreement.providerId}</p>
-                    </div>
-                    <div>
-                        <p className="text-muted-foreground mb-1">Consumer</p>
-                        <p className="font-mono text-xs break-all">{agreement.consumerId}</p>
+                    <div className="space-y-2">
+                        <div>
+                            <p className="text-muted-foreground mb-1">Asset ID</p>
+                            <p className="font-mono text-xs break-all">{agreement.assetId}</p>
+                        </div>
+                        <div>
+                            <p className="text-muted-foreground mb-1">Provider</p>
+                            <p className="font-mono text-xs break-all">{agreement.providerId}</p>
+                        </div>
+                        <div>
+                            <p className="text-muted-foreground mb-1">Consumer</p>
+                            <p className="font-mono text-xs break-all">{agreement.consumerId}</p>
+                        </div>
+                        {agreement.expiresAt > 0n && (
+                            <div>
+                                <p className="text-muted-foreground mb-1">Expires At</p>
+                                <p className="text-xs">{formatTimestamp(Number(agreement.signedAt) * 1000)}</p>
+                            </div>
+                        )}
                     </div>
                 </div>
-
-                {agreement.expiresAt > 0n && (
-                    <div className="text-sm">
-                        <p className="text-muted-foreground mb-1">Expires At</p>
-                        <p className="text-xs">{formatTimestamp(Number(agreement.signedAt) * 1000)}</p>
-                    </div>
-                )}
 
                 {explorerUrls.nft ? (
                     <Button

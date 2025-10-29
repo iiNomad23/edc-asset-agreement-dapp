@@ -1,3 +1,6 @@
+import { Hex } from 'viem';
+import { SiweMessage } from 'viem/siwe';
+
 export interface TransferProcessRequest {
     assetId: string;
     contractId: string;
@@ -34,4 +37,11 @@ export interface DataAddress {
     authType: string;
     authorization: string;
     authCode?: string;
+}
+
+export interface FetchDataRequest {
+    transferProcessId: string;
+    correlationId: string;
+    signature: Hex;
+    message: SiweMessage;
 }
