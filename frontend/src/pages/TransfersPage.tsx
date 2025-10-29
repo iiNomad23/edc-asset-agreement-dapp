@@ -5,9 +5,15 @@ import { TransferProcess } from '@/types/transfer.ts';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import DataTransferCard from '@/components/cards/DataTransferCard.tsx';
+import { useAccount, useChainId, useSignMessage } from 'wagmi';
+import { createSiweMessage, SiweMessage } from 'viem/siwe';
+import { CatalogAsset } from '@/types';
 
 const TransfersPage: React.FC = () => {
     const [fetchingTransferId, setFetchingTransferId] = useState<string | null>(null);
+    const { address, isConnected } = useAccount();
+    const { signMessageAsync } = useSignMessage();
+    const currentChainId = useChainId();
 
     const { data: transfers, isLoading } = useQuery({
         queryKey: ['transfers'],
@@ -21,31 +27,121 @@ const TransfersPage: React.FC = () => {
         refetchInterval: 30000,
     });
 
-    const handleFetchData = async (transferId: string) => {
-        try {
-            setFetchingTransferId(transferId);
+    const getAssetDetails = async (assetId: string) => {
+        const response = await fetch(`${BACKEND_URL}/api/assets`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch assets');
+        }
+        const assetsData = await response.json();
+        return assetsData.assets.find((asset: CatalogAsset) => asset.id === assetId);
+    };
 
-            const fetchDataResponse = await fetch(
-                `${BACKEND_URL}/api/transfers/${transferId}/fetch-data`,
+    const generateSIWESignature = async (requiredChainId: number) => {
+        if (!isConnected || !address) {
+            throw new Error('No Ethereum wallet connected. Please connect your wallet.');
+        }
+
+        if (currentChainId !== requiredChainId) {
+            throw new Error(
+                `Please switch to chain ID ${requiredChainId} in your wallet`,
             );
+        }
 
-            if (!fetchDataResponse.ok) {
+        const nonce = Math.random().toString(36).substring(2, 15) +
+            Math.random().toString(36).substring(2, 15);
+
+        const message: SiweMessage = {
+            domain: window.location.host,
+            address: address,
+            uri: window.location.origin,
+            version: '1',
+            chainId: requiredChainId,
+            nonce: nonce,
+            statement: 'Sign in to access protected data asset',
+            issuedAt: new Date(),
+            expirationTime: new Date(Date.now() + 10 * 60 * 1000),
+        };
+
+        const messageToSign = createSiweMessage(message);
+        const signature = await signMessageAsync({
+            message: messageToSign,
+        });
+
+        return {
+            signature: signature,
+            message: {
+                ...message
+            },
+        };
+    };
+
+    const handleFetchData = async (transfer: TransferProcess) => {
+        try {
+            setFetchingTransferId(transfer['@id']);
+
+            const asset: CatalogAsset = await getAssetDetails(transfer.assetId);
+            if (!asset) {
                 // noinspection ExceptionCaughtLocallyJS
-                throw new Error('Failed to get data address');
+                throw new Error(`Asset ${transfer.assetId} not found`);
             }
 
-            const data = await fetchDataResponse.json();
+            if (asset.contractAddress && asset.chainId && asset.chainName) {
+                const { signature, message } = await generateSIWESignature(Number(asset.chainId));
 
-            toast.success('Data fetched successfully!', {
-                description: 'Check the console for the data',
-                duration: 5000,
-            });
+                const response = await fetch(
+                    `${BACKEND_URL}/api/transfers/fetch-data`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            transferProcessId: transfer['@id'],
+                            correlationId: transfer.correlationId,
+                            signature: signature,
+                            message: message,
+                        }),
+                    },
+                );
 
-            console.log('Fetched data:', data);
+                if (!response.ok) {
+                    const error = await response.json();
+                    // noinspection ExceptionCaughtLocallyJS
+                    throw new Error(error.message ?? 'Verification failed');
+                }
+
+                const data = await response.json();
+
+                toast.success('Data fetched successfully!', {
+                    description: 'NFT verification passed',
+                    duration: 5000,
+                });
+
+                console.log('Fetched data (with NFT verification):', data);
+            } else {
+                const response = await fetch(
+                    `${BACKEND_URL}/api/transfers/${transfer['@id']}/fetch-data`,
+                );
+
+                if (!response.ok) {
+                    // noinspection ExceptionCaughtLocallyJS
+                    throw new Error('Failed to fetch data');
+                }
+
+                const data = await response.json();
+
+                toast.success('Data fetched successfully!', {
+                    description: 'Check the console for the data',
+                    duration: 5000,
+                });
+
+                console.log('Fetched data (standard):', data);
+            }
         } catch (error) {
             console.error('Error fetching data:', error);
-            toast.error('Failed to fetch data', {
+            toast.error('Error fetching data', {
                 description: error instanceof Error ? error.message : 'Unknown error',
+                duration: 5000,
             });
         } finally {
             setFetchingTransferId(null);

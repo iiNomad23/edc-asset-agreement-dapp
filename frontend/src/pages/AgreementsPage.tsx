@@ -55,11 +55,7 @@ const AgreementsPage = (): React.ReactNode => {
         },
         onSuccess: async (data) => {
             try {
-                const waitResponse = await fetch(
-                    `${BACKEND_URL}/api/transfers/${data['@id']}/wait`,
-                    { method: 'POST' }
-                );
-
+                const waitResponse = await fetch(`${BACKEND_URL}/api/transfers/${data['@id']}/wait`);
                 const result = await waitResponse.json();
                 if (!waitResponse.ok) {
                     // noinspection ExceptionCaughtLocallyJS

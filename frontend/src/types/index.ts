@@ -15,6 +15,10 @@ export interface CatalogAsset {
     '@id': string;
     '@type': string;
     description: string;
+    id: string;
+    chainId?: string;
+    chainName?: string;
+    contractAddress?: string;
     'dcat:distribution'?: AssetDistribution[];
     'odrl:hasPolicy'?: OdrlPolicy;
 }

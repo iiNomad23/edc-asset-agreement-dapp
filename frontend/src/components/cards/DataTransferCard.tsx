@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 interface DataTransferCardProps {
     transfer: TransferProcess;
-    onFetchData: (transferId: string) => void;
+    onFetchData: (transfer: TransferProcess) => void;
     isFetching: boolean;
 }
 
@@ -87,7 +87,7 @@ const DataTransferCard: React.FC<DataTransferCardProps> = ({ transfer, onFetchDa
                     </div>
                 </div>
                 <Button
-                    onClick={() => onFetchData(transfer['@id'])}
+                    onClick={() => onFetchData(transfer)}
                     disabled={!isInStartedState || isFetching}
                     variant="outline"
                     size="sm"
