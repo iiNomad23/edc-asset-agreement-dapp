@@ -1,12 +1,6 @@
 import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 import { AppError } from '../errors/baseAppError.js';
-
-interface ProblemDetails {
-    type: string;
-    title: string;
-    status: number;
-    detail: string;
-}
+import { ProblemDetails } from '../types/errors.js';
 
 /**
  * RFC 7807 Problem Details for HTTP APIs
