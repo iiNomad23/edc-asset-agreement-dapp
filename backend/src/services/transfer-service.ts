@@ -15,6 +15,7 @@ import {
     TransferTimeoutError,
     UnsupportedMethodError,
 } from '../errors/transferErrors.js';
+import { ProxiedBackendError } from '../errors/proxy/proxiedBackendError.js';
 
 interface FetchDataProps {
     method: string,
@@ -176,17 +177,21 @@ export class TransferService {
     }
 
     async fetchData(endpoint: string, authToken: string, props: FetchDataProps): Promise<unknown> {
-        try {
-            switch (props.method) {
-                case 'GET': {
+        switch (props.method) {
+            case 'GET': {
+                try {
                     const response = await axios.get(endpoint, {
                         headers: {
                             'Authorization': authToken,
                         },
                     });
                     return response.data;
+                } catch (error) {
+                    throw new DataFetchError();
                 }
-                case 'POST': {
+            }
+            case 'POST': {
+                try {
                     // TODO: use endpoint parameter after deployment
                     const response = await axios.post('http://localhost:8190/api/dummy-service/fetch-data', props.body, {
                         headers: {
@@ -195,18 +200,17 @@ export class TransferService {
                         },
                     });
                     return response.data;
-                }
-                default: {
-                    // noinspection ExceptionCaughtLocallyJS
-                    throw new UnsupportedMethodError();
+                } catch (error) {
+                    if (axios.isAxiosError(error) && error.response?.data) {
+                        const problemDetails = error.response.data;
+                        throw new ProxiedBackendError(problemDetails);
+                    }
+                    throw new DataFetchError();
                 }
             }
-        } catch (error) {
-            if (error instanceof UnsupportedMethodError) {
-                throw error;
+            default: {
+                throw new UnsupportedMethodError();
             }
-
-            throw new DataFetchError();
         }
     }
 }
