@@ -17,7 +17,7 @@ import {
     InvalidSignatureError,
     SignatureVerificationFailedError,
     TransferMismatchError,
-} from '../errors/verificationErrors.js';
+} from '../errors/domain/verificationErrors.js';
 
 export class VerificationService {
     private readonly edcService: EDCService;
