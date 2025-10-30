@@ -2,6 +2,17 @@ import { Address, Chain, createPublicClient, http, PublicClient } from 'viem';
 import { NFTMetadata } from '../types/verification.js';
 import { EDC_AGREEMENT_NFT_ABI } from '../config/abis/contractAgreementNFTabi.js';
 import { hardhat, mainnet, sepolia } from 'viem/chains';
+import {
+    CreatePublicClientError,
+    MetadataFetchError,
+    NftExpiredAgreementError,
+    NftNotFoundError,
+    NftOwnershipVerificationError,
+    NftRevokedAgreementError,
+    OwnerOfTokenIdFetchError,
+    TokenIdFetchError,
+    UnsupportedChainError,
+} from '../errors/blockchainErrors.js';
 
 const SUPPORTED_CHAINS: Record<number, Chain> = {
     1: mainnet,
@@ -19,15 +30,17 @@ export class NFTService {
     private createClient(chainId: number): PublicClient {
         const chain = SUPPORTED_CHAINS[chainId];
         if (!chain) {
-            throw new Error(
-                `Unsupported chain ID: ${chainId}. Supported chains: ${Object.keys(SUPPORTED_CHAINS).join(', ')}`,
-            );
+            throw new UnsupportedChainError();
         }
 
-        return createPublicClient({
-            chain,
-            transport: this.rpcUrl !== '' ? http(this.rpcUrl) : http(),
-        });
+        try {
+            return createPublicClient({
+                chain,
+                transport: this.rpcUrl !== '' ? http(this.rpcUrl) : http(),
+            });
+        } catch (e) {
+            throw new CreatePublicClientError();
+        }
     }
 
     private async getAgreementMetadata(
@@ -36,22 +49,55 @@ export class NFTService {
         chainId: number,
     ): Promise<NFTMetadata> {
         const client = this.createClient(chainId);
-        const agreement = await client.readContract({
-            address: contractAddress,
-            abi: EDC_AGREEMENT_NFT_ABI,
-            functionName: 'getAgreement',
-            args: [tokenId],
-        }) as NFTMetadata;
 
-        return {
-            agreementId: agreement.agreementId,
-            assetId: agreement.assetId,
-            signedAt: agreement.signedAt,
-            providerId: agreement.providerId,
-            consumerId: agreement.consumerId,
-            expiresAt: agreement.expiresAt,
-            isRevoked: agreement.isRevoked,
-        };
+        try {
+            return await client.readContract({
+                address: contractAddress,
+                abi: EDC_AGREEMENT_NFT_ABI,
+                functionName: 'getAgreement',
+                args: [tokenId],
+            }) as NFTMetadata;
+        } catch (e) {
+            throw new MetadataFetchError();
+        }
+    }
+
+    private async getTokenByAgreementId(
+        contractAddress: Address,
+        agreementId: string,
+        chainId: number,
+    ): Promise<bigint> {
+        const client = this.createClient(chainId);
+
+        try {
+            return await client.readContract({
+                address: contractAddress,
+                abi: EDC_AGREEMENT_NFT_ABI,
+                functionName: 'agreementIdToTokenId',
+                args: [agreementId],
+            }) as bigint;
+        } catch (e) {
+            throw new TokenIdFetchError();
+        }
+    }
+
+    private async getOwnerOfTokenId(
+        contractAddress: Address,
+        tokenId: bigint,
+        chainId: number,
+    ): Promise<Address> {
+        const client = this.createClient(chainId);
+
+        try {
+            return await client.readContract({
+                address: contractAddress,
+                abi: EDC_AGREEMENT_NFT_ABI,
+                functionName: 'ownerOf',
+                args: [tokenId],
+            }) as Address;
+        } catch (e) {
+            throw new OwnerOfTokenIdFetchError();
+        }
     }
 
     async verifyNFTOwnership(
@@ -60,28 +106,14 @@ export class NFTService {
         agreementId: string,
         chainId: number,
     ): Promise<{ tokenId: bigint; metadata: NFTMetadata }> {
-        const client = this.createClient(chainId);
-
-        const tokenId = await client.readContract({
-            address: contractAddress,
-            abi: EDC_AGREEMENT_NFT_ABI,
-            functionName: 'agreementIdToTokenId',
-            args: [agreementId],
-        }) as bigint;
-
+        const tokenId = await this.getTokenByAgreementId(contractAddress, agreementId, chainId);
         if (tokenId === 0n) {
-            throw new Error(`No NFT found for agreement ID "${agreementId}" in contract ${contractAddress}`);
+            throw new NftNotFoundError();
         }
 
-        const actualOwner = await client.readContract({
-            address: contractAddress,
-            abi: EDC_AGREEMENT_NFT_ABI,
-            functionName: 'ownerOf',
-            args: [tokenId],
-        }) as Address;
-
+        const actualOwner = await this.getOwnerOfTokenId(contractAddress, tokenId, chainId);
         if (actualOwner.toLowerCase() !== ownerAddress.toLowerCase()) {
-            throw new Error(`NFT ownership verification failed: Token ${tokenId} (agreement: ${agreementId}) is owned by ${actualOwner}, not ${ownerAddress}`);
+            throw new NftOwnershipVerificationError();
         }
 
         const metadata = await this.getAgreementMetadata(
@@ -91,15 +123,14 @@ export class NFTService {
         );
 
         if (metadata.isRevoked) {
-            throw new Error(`NFT token ${tokenId} (agreement: ${agreementId}) has been revoked`);
+            throw new NftRevokedAgreementError();
         }
 
         const now = BigInt(Math.floor(Date.now() / 1000));
         const isExpired = metadata.expiresAt > 0n && metadata.expiresAt < now;
 
         if (isExpired) {
-            const expiryDate = new Date(Number(metadata.expiresAt) * 1000).toISOString();
-            throw new Error(`NFT token ${tokenId} (agreement: ${agreementId}) expired at ${expiryDate}`);
+            throw new NftExpiredAgreementError();
         }
 
         return {

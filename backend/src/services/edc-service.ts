@@ -1,5 +1,6 @@
-import axios, { AxiosError } from 'axios';
-import type { Asset, CatalogQueryRequest } from '../types/index.js';
+import axios from 'axios';
+import { CatalogAsset, CatalogEnvelop, CatalogQueryRequest } from '../types/catalog.js';
+import { CatalogFetchError } from '../errors/catalogErrors.js';
 
 export class EDCService {
     private readonly baseUrl: string;
@@ -10,7 +11,7 @@ export class EDCService {
         this.apiKey = apiKey;
     }
 
-    async getCachedCatalog(): Promise<any> {
+    async getCachedCatalog(): Promise<CatalogEnvelop[]> {
         const payload: CatalogQueryRequest = {
             '@context': ['https://w3id.org/edc/connector/management/v0.0.1'],
             '@type': 'QuerySpec'
@@ -30,21 +31,13 @@ export class EDCService {
 
             return response.data;
         } catch (error) {
-            if (axios.isAxiosError(error)) {
-                const axiosError = error as AxiosError;
-                throw new Error(
-                    `Failed to fetch catalog: ${axiosError.message}. ${
-                        axiosError.response?.data ? JSON.stringify(axiosError.response.data) : ''
-                    }`
-                );
-            }
-            throw error;
+            throw new CatalogFetchError();
         }
     }
 
-    async getAssets(): Promise<Asset[]> {
+    async getAssets(): Promise<CatalogAsset[]> {
         const catalogs = await this.getCachedCatalog();
-        const assets: Asset[] = [];
+        const catalogAssets: CatalogAsset[] = [];
 
         for (const catalog of catalogs) {
             if (!catalog['dcat:catalog']) {
@@ -57,15 +50,12 @@ export class EDCService {
 
             for (const catalogItem of catalogArray) {
                 const datasets = catalogItem['dcat:dataset'] ?? [];
-
-                for (const dataset of datasets) {
-                    assets.push({
-                        ...dataset
-                    });
+                for (const catalogAsset of datasets) {
+                    catalogAssets.push(catalogAsset);
                 }
             }
         }
 
-        return assets;
+        return catalogAssets;
     }
 }

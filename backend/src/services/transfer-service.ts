@@ -1,8 +1,20 @@
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import { DataAddress, EndpointDataReference, TransferProcess, TransferProcessRequest } from '../types/transfer.js';
 import type { ContractService } from './contract-service.js';
 import { Hex } from 'viem';
 import { SiweMessage } from 'viem/siwe';
+import { MissingCounterPartyAddressError, NegotiationNotFoundError } from '../errors/contractErrors.js';
+import {
+    DataAddressFetchError,
+    DataFetchError,
+    EdrFetchError,
+    TransferFailedError,
+    TransferFetchError,
+    TransferInitiationError,
+    TransferNotFoundError,
+    TransferTimeoutError,
+    UnsupportedMethodError,
+} from '../errors/transferErrors.js';
 
 interface FetchDataProps {
     method: string,
@@ -31,11 +43,11 @@ export class TransferService {
         );
 
         if (!negotiation) {
-            throw new Error(`No negotiation found for agreement ${request.contractId}`);
+            throw new NegotiationNotFoundError();
         }
 
         if (!negotiation.counterPartyAddress) {
-            throw new Error(`Negotiation ${negotiation['@id']} has no counterPartyAddress`);
+            throw new MissingCounterPartyAddressError();
         }
 
         const payload = {
@@ -66,15 +78,7 @@ export class TransferService {
 
             return response.data;
         } catch (error) {
-            if (axios.isAxiosError(error)) {
-                const axiosError = error as AxiosError;
-                throw new Error(
-                    `Failed to initiate transfer: ${axiosError.message}. ${
-                        axiosError.response?.data ? JSON.stringify(axiosError.response.data) : ''
-                    }`,
-                );
-            }
-            throw error;
+            throw new TransferInitiationError();
         }
     }
 
@@ -88,7 +92,7 @@ export class TransferService {
             const transfer = transfers.find(t => t['@id'] === transferId);
 
             if (!transfer) {
-                throw new Error(`Transfer ${transferId} not found`);
+                throw new TransferNotFoundError();
             }
 
             if (transfer.state === 'STARTED') {
@@ -96,13 +100,13 @@ export class TransferService {
             }
 
             if (transfer.state === 'TERMINATED' || transfer.state === 'ERROR') {
-                throw new Error(`Transfer failed with state: ${transfer.state}\n${transfer.errorDetail ?? ''}`);
+                throw new TransferFailedError();
             }
 
             await new Promise(resolve => setTimeout(resolve, delayMs));
         }
 
-        throw new Error(`Transfer did not start within ${maxAttempts * delayMs / 1000} seconds`);
+        throw new TransferTimeoutError();
     }
 
     async getTransfers(): Promise<TransferProcess[]> {
@@ -125,15 +129,7 @@ export class TransferService {
 
             return response.data;
         } catch (error) {
-            if (axios.isAxiosError(error)) {
-                const axiosError = error as AxiosError;
-                throw new Error(
-                    `Failed to fetch transfers: ${axiosError.message}. ${
-                        axiosError.response?.data ? JSON.stringify(axiosError.response.data) : ''
-                    }`,
-                );
-            }
-            throw error;
+            throw new TransferFetchError();
         }
     }
 
@@ -157,15 +153,7 @@ export class TransferService {
 
             return response.data;
         } catch (error) {
-            if (axios.isAxiosError(error)) {
-                const axiosError = error as AxiosError;
-                throw new Error(
-                    `Failed to fetch EDRs: ${axiosError.message}. ${
-                        axiosError.response?.data ? JSON.stringify(axiosError.response.data) : ''
-                    }`,
-                );
-            }
-            throw error;
+            throw new EdrFetchError();
         }
     }
 
@@ -183,15 +171,7 @@ export class TransferService {
 
             return response.data;
         } catch (error) {
-            if (axios.isAxiosError(error)) {
-                const axiosError = error as AxiosError;
-                throw new Error(
-                    `Failed to fetch data address for EDR: ${axiosError.message}. ${
-                        axiosError.response?.data ? JSON.stringify(axiosError.response.data) : ''
-                    }`,
-                );
-            }
-            throw error;
+            throw new DataAddressFetchError();
         }
     }
 
@@ -218,19 +198,15 @@ export class TransferService {
                 }
                 default: {
                     // noinspection ExceptionCaughtLocallyJS
-                    throw new Error(`Unsupported method: ${props.method}`);
+                    throw new UnsupportedMethodError();
                 }
             }
         } catch (error) {
-            if (axios.isAxiosError(error)) {
-                const axiosError = error as AxiosError;
-                throw new Error(
-                    `Failed to fetch data: ${axiosError.message}. ${
-                        axiosError.response?.data ? JSON.stringify(axiosError.response.data) : ''
-                    }`,
-                );
+            if (error instanceof UnsupportedMethodError) {
+                throw error;
             }
-            throw error;
+
+            throw new DataFetchError();
         }
     }
 }
