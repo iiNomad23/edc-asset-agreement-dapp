@@ -26,7 +26,7 @@ const AgreementsPage = (): React.ReactNode => {
         queryFn: async () => {
             const response = await fetch(`${BACKEND_URL}/api/contracts/agreements`);
             if (!response.ok) {
-                throw new Error('Failed to fetch agreements');
+                await handleApiError(response);
             }
             return await response.json() as Promise<ContractAgreement[]>;
         },
@@ -48,8 +48,7 @@ const AgreementsPage = (): React.ReactNode => {
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message ?? 'Failed to initiate transfer');
+                await handleApiError(response);
             }
 
             return response.json();

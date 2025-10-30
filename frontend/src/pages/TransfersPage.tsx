@@ -7,7 +7,8 @@ import { Loader2 } from 'lucide-react';
 import DataTransferCard from '@/components/cards/DataTransferCard.tsx';
 import { useAccount, useChainId, useSignMessage } from 'wagmi';
 import { createSiweMessage, SiweMessage } from 'viem/siwe';
-import { CatalogAsset } from '@/types';
+import { CatalogAsset } from '@/types/catalog.ts';
+import { handleApiError } from '@/lib/apiUtils.ts';
 
 const TransfersPage: React.FC = () => {
     const [fetchingTransferId, setFetchingTransferId] = useState<string | null>(null);
@@ -20,7 +21,7 @@ const TransfersPage: React.FC = () => {
         queryFn: async () => {
             const response = await fetch(`${BACKEND_URL}/api/transfers`);
             if (!response.ok) {
-                throw new Error('Failed to fetch transfers');
+                await handleApiError(response);
             }
             return await response.json() as Promise<TransferProcess[]>;
         },
@@ -30,7 +31,7 @@ const TransfersPage: React.FC = () => {
     const getAssetDetails = async (assetId: string) => {
         const response = await fetch(`${BACKEND_URL}/api/assets`);
         if (!response.ok) {
-            throw new Error('Failed to fetch assets');
+            await handleApiError(response);
         }
         const assetsData = await response.json();
         return assetsData.assets.find((asset: CatalogAsset) => asset.id === assetId);
@@ -105,9 +106,8 @@ const TransfersPage: React.FC = () => {
                 );
 
                 if (!response.ok) {
-                    const error = await response.json();
                     // noinspection ExceptionCaughtLocallyJS
-                    throw new Error(error.message ?? 'Verification failed');
+                    await handleApiError(response);
                 }
 
                 const data = await response.json();
@@ -125,7 +125,7 @@ const TransfersPage: React.FC = () => {
 
                 if (!response.ok) {
                     // noinspection ExceptionCaughtLocallyJS
-                    throw new Error('Failed to fetch data');
+                    await handleApiError(response);
                 }
 
                 const data = await response.json();
