@@ -6,8 +6,8 @@ import { Button, buttonVariants } from '@/components/ui/button.tsx';
 import AgreementNFTCard from '@/components/cards/AgreementNFTCard.tsx';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { parseContractError, parseTransactionRevertedErrorData } from '@/lib/contractErrorUtils.ts';
-import { TransactionRevertedError } from '@/errors/TransactionRevertedError.ts';
+import { parseContractError, parseTransactionRevertedErrorData } from '@/lib/contractUtils.ts';
+import { TransactionRevertedError } from '@/errors/transactionRevertedError.ts';
 import {
     AlertDialog,
     AlertDialogAction,

@@ -8,10 +8,11 @@ import { useEDCAgreementNFT } from '@/hooks/useEDCAgreementNFT.ts';
 import { toast } from 'sonner';
 import { generateAgreementMetadata, metadataToDataURI } from '@/lib/nftMetadataUtils.ts';
 import { BACKEND_URL } from '@/config/env.ts';
-import { parseContractError, parseTransactionRevertedErrorData } from '@/lib/contractErrorUtils.ts';
+import { parseContractError, parseTransactionRevertedErrorData } from '@/lib/contractUtils.ts';
 import { DEFAULT_BADGE_IMAGE } from '@/config/constants.ts';
-import { TransactionRevertedError } from '@/errors/TransactionRevertedError.ts';
+import { TransactionRevertedError } from '@/errors/transactionRevertedError.ts';
 import { TransferProcessRequest } from '@/types/transfer.ts';
+import { handleApiError } from '@/lib/apiUtils.ts';
 
 const AgreementsPage = (): React.ReactNode => {
     const [mintingAgreementId, setMintingAgreementId] = useState<string | null>(null);
