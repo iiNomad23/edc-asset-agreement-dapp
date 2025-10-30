@@ -12,6 +12,7 @@ import transferRoutes from './routes/api/transfers.js';
 import { NFTService } from './services/nft-service.js';
 import { VerificationService } from './services/verification-service.js';
 import dummyServiceRoutes from './routes/api/dummy-service/dummy-service.js';
+import { errorHandler } from './middleware/errorHandlerMiddleware.js';
 
 export async function buildApp() {
     const fastify = Fastify({
@@ -24,6 +25,8 @@ export async function buildApp() {
         origin: FRONTEND_URL,
         credentials: true,
     });
+
+    fastify.setErrorHandler(errorHandler);
 
     const edcService = new EDCService(
         CONSUMER_CATALOG_QUERY_URL,
