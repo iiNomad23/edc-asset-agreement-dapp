@@ -2,7 +2,7 @@ import React from 'react';
 import { FileText, Loader2, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.tsx';
-import { CatalogAsset } from '@/types';
+import { CatalogAsset } from '@/types/catalog.ts';
 
 interface CatalogAssetCardProps {
     asset: CatalogAsset;

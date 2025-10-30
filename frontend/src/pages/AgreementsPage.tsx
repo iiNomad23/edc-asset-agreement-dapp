@@ -8,10 +8,11 @@ import { useEDCAgreementNFT } from '@/hooks/useEDCAgreementNFT.ts';
 import { toast } from 'sonner';
 import { generateAgreementMetadata, metadataToDataURI } from '@/lib/nftMetadataUtils.ts';
 import { BACKEND_URL } from '@/config/env.ts';
-import { parseContractError, parseTransactionRevertedErrorData } from '@/lib/contractErrorUtils.ts';
+import { parseContractError, parseTransactionRevertedErrorData } from '@/lib/contractUtils.ts';
 import { DEFAULT_BADGE_IMAGE } from '@/config/constants.ts';
-import { TransactionRevertedError } from '@/errors/TransactionRevertedError.ts';
+import { TransactionRevertedError } from '@/errors/transactionRevertedError.ts';
 import { TransferProcessRequest } from '@/types/transfer.ts';
+import { handleApiError } from '@/lib/apiUtils.ts';
 
 const AgreementsPage = (): React.ReactNode => {
     const [mintingAgreementId, setMintingAgreementId] = useState<string | null>(null);
@@ -25,7 +26,7 @@ const AgreementsPage = (): React.ReactNode => {
         queryFn: async () => {
             const response = await fetch(`${BACKEND_URL}/api/contracts/agreements`);
             if (!response.ok) {
-                throw new Error('Failed to fetch agreements');
+                await handleApiError(response);
             }
             return await response.json() as Promise<ContractAgreement[]>;
         },
@@ -47,8 +48,7 @@ const AgreementsPage = (): React.ReactNode => {
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message ?? 'Failed to initiate transfer');
+                await handleApiError(response);
             }
 
             return response.json();

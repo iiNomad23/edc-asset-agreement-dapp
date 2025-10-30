@@ -1,5 +1,14 @@
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import type { ContractAgreement, ContractNegotiationRequest, ContractNegotiationResponse } from '../types/contract.js';
+import {
+    AgreementFetchError,
+    MissingAgreementIdError,
+    NegotiationFailedError,
+    NegotiationFetchError,
+    NegotiationInitiationError,
+    NegotiationNotFoundError,
+    NegotiationTimeoutError,
+} from '../errors/domain/contractErrors.js';
 
 export class ContractService {
     private readonly baseUrl: string;
@@ -43,15 +52,7 @@ export class ContractService {
 
             return response.data;
         } catch (error) {
-            if (axios.isAxiosError(error)) {
-                const axiosError = error as AxiosError;
-                throw new Error(
-                    `Failed to initiate negotiation: ${axiosError.message}. ${
-                        axiosError.response?.data ? JSON.stringify(axiosError.response.data) : ''
-                    }`
-                );
-            }
-            throw error;
+            throw new NegotiationInitiationError();
         }
     }
 
@@ -73,17 +74,9 @@ export class ContractService {
                 }
             );
 
-            return  response.data;
+            return response.data;
         } catch (error) {
-            if (axios.isAxiosError(error)) {
-                const axiosError = error as AxiosError;
-                throw new Error(
-                    `Failed to fetch negotiations: ${axiosError.message}. ${
-                        axiosError.response?.data ? JSON.stringify(axiosError.response.data) : ''
-                    }`
-                );
-            }
-            throw error;
+            throw new NegotiationFetchError();
         }
     }
 
@@ -95,25 +88,26 @@ export class ContractService {
         for (let i = 0; i < maxAttempts; i++) {
             const negotiations = await this.getNegotiations();
             const negotiation = negotiations.find(n => n['@id'] === negotiationId);
+
             if (!negotiation) {
-                throw new Error(`Negotiation ${negotiationId} not found`);
+                throw new NegotiationNotFoundError();
             }
 
             if (negotiation.state === 'FINALIZED') {
                 if (!negotiation.contractAgreementId) {
-                    throw new Error('Negotiation finalized but no contract agreement ID found');
+                    throw new MissingAgreementIdError();
                 }
                 return negotiation;
             }
 
             if (negotiation.state === 'TERMINATED' || negotiation.state === 'ERROR') {
-                throw new Error(`Negotiation failed with state: ${negotiation.state}\n${negotiation.errorDetail}`);
+                throw new NegotiationFailedError();
             }
 
             await new Promise(resolve => setTimeout(resolve, delayMs));
         }
 
-        throw new Error(`Negotiation did not finalize within ${maxAttempts * delayMs / 1000} seconds`);
+        throw new NegotiationTimeoutError();
     }
 
     async getAgreements(): Promise<ContractAgreement[]> {
@@ -136,15 +130,7 @@ export class ContractService {
 
             return response.data;
         } catch (error) {
-            if (axios.isAxiosError(error)) {
-                const axiosError = error as AxiosError;
-                throw new Error(
-                    `Failed to fetch agreements: ${axiosError.message}. ${
-                        axiosError.response?.data ? JSON.stringify(axiosError.response.data) : ''
-                    }`
-                );
-            }
-            throw error;
+            throw new AgreementFetchError();
         }
     }
 }

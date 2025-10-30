@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import CatalogAssetCard from '@/components/cards/CatalogAssetCard.tsx';
-import { CatalogEnvelop } from '@/types';
+import { CatalogEnvelop } from '@/types/catalog.ts';
 import { ContractNegotiationRequest } from '@/types/contract.ts';
 import { OdrlPolicy } from '@/types/policy.ts';
 import { toast } from 'sonner';
 import { BACKEND_URL } from '@/config/env.ts';
+import { handleApiError } from '@/lib/apiUtils.ts';
 
 const AssetsPage = (): React.ReactNode => {
     const [selectedConnector, setSelectedConnector] = useState<string>('');
@@ -17,7 +18,7 @@ const AssetsPage = (): React.ReactNode => {
         queryFn: async () => {
             const response = await fetch(`${BACKEND_URL}/api/catalog/cached`);
             if (!response.ok) {
-                throw new Error('Failed to fetch catalog');
+                await handleApiError(response);
             }
             return await response.json() as Promise<CatalogEnvelop[]>;
         },
@@ -35,8 +36,7 @@ const AssetsPage = (): React.ReactNode => {
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message ?? 'Failed to initiate negotiation');
+                await handleApiError(response);
             }
 
             return response.json();
@@ -50,7 +50,7 @@ const AssetsPage = (): React.ReactNode => {
                 const result = await response.json();
                 if (!response.ok) {
                     // noinspection ExceptionCaughtLocallyJS
-                    throw new Error(result.message);
+                    await handleApiError(response);
                 }
 
                 toast.success('Contract Negotiated Successfully', {

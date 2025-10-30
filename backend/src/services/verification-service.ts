@@ -1,10 +1,23 @@
-import { Address, verifyMessage } from 'viem';
+import { Address, Hex, verifyMessage } from 'viem';
 import type { TransferService } from './transfer-service.js';
 import type { ContractService } from './contract-service.js';
 import type { NFTService } from './nft-service.js';
 import type { EDCService } from './edc-service.js';
-import type { AssetNFTProperties, VerificationRequest, VerificationResponse } from '../types/verification.js';
+import { SiweMessageData, VerificationRequest, VerificationResponse } from '../types/verification.js';
 import { createSiweMessage, SiweMessage } from 'viem/siwe';
+import { TransferProcess } from '../types/transfer.js';
+import { ContractAgreement } from '../types/contract.js';
+import { CatalogAsset } from '../types/catalog.js';
+import {
+    AgreementMismatchError,
+    AssetIdMismatchError,
+    AssetMismatchError,
+    AssetNftConfigurationNotFoundError,
+    ChainIdMismatchError,
+    InvalidSignatureError,
+    SignatureVerificationFailedError,
+    TransferMismatchError,
+} from '../errors/domain/verificationErrors.js';
 
 export class VerificationService {
     private readonly edcService: EDCService;
@@ -24,170 +37,126 @@ export class VerificationService {
         this.nftService = nftService;
     }
 
-    private async getAssetNFTConfig(assetId: string): Promise<AssetNFTProperties | null> {
-        try {
-            const assets = await this.edcService.getAssets();
-            const asset = assets.find(a => a.id === assetId);
-            if (!asset) {
-                return null;
-            }
-
-            if (!asset.contractAddress || !asset.chainId || !asset.chainName) {
-                return null;
-            }
-
-            return {
-                contractAddress: asset.contractAddress as `0x${string}`,
-                chainId: Number(asset.chainId),
-                chainName: asset.chainName,
-                nftRequired: true,
-            };
-        } catch (error) {
-            throw new Error(
-                `Failed to get asset NFT config: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            );
-        }
-    }
-
-    async verifyDataAccess(request: VerificationRequest): Promise<VerificationResponse> {
+    private async verifySiweMessage(message: SiweMessageData, signature: Hex): Promise<boolean> {
         try {
             const siweMessageParams: SiweMessage = {
-                domain: request.message.domain,
-                address: request.message.address,
-                uri: request.message.uri,
-                version: request.message.version,
-                chainId: request.message.chainId,
-                nonce: request.message.nonce,
+                domain: message.domain,
+                address: message.address,
+                uri: message.uri,
+                version: message.version,
+                chainId: message.chainId,
+                nonce: message.nonce,
             };
 
-            if (request.message.statement) {
-                siweMessageParams.statement = request.message.statement;
+            if (message.statement) {
+                siweMessageParams.statement = message.statement;
             }
-            if (request.message.issuedAt) {
-                siweMessageParams.issuedAt = new Date(request.message.issuedAt);
+            if (message.issuedAt) {
+                siweMessageParams.issuedAt = new Date(message.issuedAt);
             }
-            if (request.message.expirationTime) {
-                siweMessageParams.expirationTime = new Date(request.message.expirationTime);
+            if (message.expirationTime) {
+                siweMessageParams.expirationTime = new Date(message.expirationTime);
             }
 
             const siweMessage = createSiweMessage(siweMessageParams);
-            const isValid = await verifyMessage({
-                address: request.message.address,
+            return await verifyMessage({
+                address: message.address,
                 message: siweMessage,
-                signature: request.signature,
+                signature: signature,
             });
-
-            if (!isValid) {
-                return {
-                    success: false,
-                    message: 'Signature verification failed',
-                    error: 'Invalid signature'
-                };
-            }
         } catch (error) {
-            return {
-                success: false,
-                message: 'Signature verification failed',
-                error: error instanceof Error ? error.message : 'Unknown error',
-            };
+            throw new SignatureVerificationFailedError();
         }
+    }
 
+    private async getMatchingTransfer(correlationId: string): Promise<TransferProcess> {
         const transfers = await this.transferService.getTransfers();
         const matchingTransfer = transfers.find(
             // transfer => transfer['@id'] === request.correlationId,  // TODO: we need to use this after we deploy on the linux server
-            transfer => transfer.correlationId === request.correlationId,
+            transfer => transfer.correlationId === correlationId,
         );
 
         if (!matchingTransfer) {
-            return {
-                success: false,
-                message: 'Transfer process not found',
-                error: `No transfer found with correlation ID: ${request.correlationId}`,
-            };
+            throw new TransferMismatchError();
         }
 
-        const negotiations = await this.contractService.getNegotiations();
-        const matchingNegotiation = negotiations.find(
-            negotiation => negotiation.contractAgreementId === matchingTransfer.contractId,
-        );
+        return matchingTransfer;
+    }
 
-        if (!matchingNegotiation) {
-            return {
-                success: false,
-                message: 'Contract negotiation not found',
-                error: `No negotiation found for contract ID: ${matchingTransfer.contractId}`,
-            };
-        }
-
+    private async getMatchingAgreement(contractId: string): Promise<ContractAgreement> {
         const agreements = await this.contractService.getAgreements();
         const matchingAgreement = agreements.find(
-            agreement => agreement['@id'] === matchingTransfer.contractId,
+            agreement => agreement['@id'] === contractId,
         );
 
         if (!matchingAgreement) {
-            return {
-                success: false,
-                message: 'Contract agreement not found',
-                error: `No agreement found with ID: ${matchingTransfer.contractId}`,
-            };
+            throw new AgreementMismatchError();
         }
 
-        const assetNFTConfig = await this.getAssetNFTConfig(matchingTransfer.assetId);
-        if (!assetNFTConfig) {
-            return {
-                success: false,
-                message: 'Asset NFT configuration not found',
-                error: `Asset ${matchingTransfer.assetId} does not have NFT requirements configured`,
-            };
+        return matchingAgreement;
+    }
+
+    private async getMatchingAsset(assetId: string): Promise<CatalogAsset> {
+        const assets = await this.edcService.getAssets();
+        const asset = assets.find(asset => asset.id === assetId);
+
+        if (!asset) {
+            throw new AssetMismatchError();
         }
 
-        if (request.message.chainId !== assetNFTConfig.chainId) {
-            return {
-                success: false,
-                message: 'Chain ID mismatch',
-                error: `Expected chain ${assetNFTConfig.chainId}, got ${request.message.chainId}`,
-            };
+        return asset;
+    }
+
+    async verifyDataAccess(request: VerificationRequest): Promise<VerificationResponse> {
+        const isValid = await this.verifySiweMessage(request.message, request.signature);
+        if (!isValid) {
+            throw new InvalidSignatureError();
         }
 
-        try {
-            const nftVerification = await this.nftService.verifyNFTOwnership(
-                assetNFTConfig.contractAddress,
-                request.message.address as Address,
-                matchingAgreement['@id'],
-                assetNFTConfig.chainId,
-            );
+        const matchingTransfer = await this.getMatchingTransfer(request.correlationId);
+        const matchingAgreement = await this.getMatchingAgreement(matchingTransfer.contractId);
+        const asset = await this.getMatchingAsset(matchingTransfer.assetId);
 
-            const metadata = nftVerification.metadata;
-            if (metadata.assetId !== matchingTransfer.assetId) {
-                return {
-                    success: false,
-                    message: 'NFT asset mismatch',
-                    error: `NFT asset ID ${metadata.assetId} does not match transfer asset ${matchingTransfer.assetId}`,
-                };
-            }
+        const contractAddress = asset.contractAddress as Address;
+        const chainId = Number(asset.chainId);
 
-            return {
-                success: true,
-                message: 'Verification successful',
-                data: {
-                    address: request.message.address,
-                    transferId: matchingTransfer['@id'],
-                    contractId: matchingTransfer.contractId,
-                    assetId: matchingTransfer.assetId,
-                    tokenId: nftVerification.tokenId.toString(),
-                    nftMetadata: {
-                        ...nftVerification.metadata,
-                        signedAt: nftVerification.metadata.signedAt.toString(),
-                        expiresAt: nftVerification.metadata.expiresAt.toString(),
-                    },
+        if (!contractAddress || !chainId) {
+            throw new AssetNftConfigurationNotFoundError();
+        }
+
+        if (request.message.chainId !== chainId) {
+            throw new ChainIdMismatchError();
+        }
+
+        const ownerAddress = request.message.address as Address;
+        const agreementId = matchingAgreement['@id'];
+
+        const nftVerification = await this.nftService.verifyNFTOwnership(
+            contractAddress,
+            ownerAddress,
+            agreementId,
+            chainId,
+        );
+
+        const metadata = nftVerification.metadata;
+        if (metadata.assetId !== matchingTransfer.assetId) {
+            throw new AssetIdMismatchError();
+        }
+
+        return {
+            message: 'Verification successful',
+            data: {
+                contractAddress: contractAddress,
+                ownerAddress: ownerAddress,
+                chainId: chainId,
+                transferId: matchingTransfer['@id'],
+                tokenId: nftVerification.tokenId.toString(),
+                nftMetadata: {
+                    ...nftVerification.metadata,
+                    signedAt: nftVerification.metadata.signedAt.toString(),
+                    expiresAt: nftVerification.metadata.expiresAt.toString(),
                 },
-            };
-        } catch (error) {
-            return {
-                success: false,
-                message: 'NFT verification failed',
-                error: error instanceof Error ? error.message : 'Unknown error',
-            };
-        }
+            },
+        };
     }
 }
