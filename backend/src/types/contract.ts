@@ -7,7 +7,7 @@ export interface ContractNegotiationRequest {
     counterPartyId: string;
 }
 
-export interface ContractNegotiationResponse {
+export interface ContractNegotiation {
     '@id': string;
     '@type': string;
     type: string;

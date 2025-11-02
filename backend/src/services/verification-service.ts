@@ -40,12 +40,12 @@ export class VerificationService {
     private async verifySiweMessage(message: SiweMessageData, signature: Hex): Promise<boolean> {
         try {
             const siweMessageParams: SiweMessage = {
-                domain: message.domain,
                 address: message.address,
-                uri: message.uri,
-                version: message.version,
                 chainId: message.chainId,
+                domain: message.domain,
+                uri: message.uri,
                 nonce: message.nonce,
+                version: message.version,
             };
 
             if (message.statement) {

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ContractAgreement, ContractNegotiationRequest, ContractNegotiationResponse } from '../types/contract.js';
+import type { ContractAgreement, ContractNegotiation, ContractNegotiationRequest } from '../types/contract.js';
 import {
     AgreementFetchError,
     MissingAgreementIdError,
@@ -19,7 +19,7 @@ export class ContractService {
         this.apiKey = apiKey;
     }
 
-    async initiateNegotiation(request: ContractNegotiationRequest): Promise<ContractNegotiationResponse> {
+    async initiateNegotiation(request: ContractNegotiationRequest): Promise<ContractNegotiation> {
         const payload = {
             '@context': ['https://w3id.org/edc/connector/management/v0.0.1'],
             '@type': 'ContractRequest',
@@ -56,7 +56,7 @@ export class ContractService {
         }
     }
 
-    async getNegotiations(): Promise<ContractNegotiationResponse[]> {
+    async getNegotiations(): Promise<ContractNegotiation[]> {
         const payload = {
             '@context': ['https://w3id.org/edc/connector/management/v0.0.1'],
             '@type': 'QuerySpec'
@@ -84,7 +84,7 @@ export class ContractService {
         negotiationId: string,
         maxAttempts = 20,
         delayMs = 2000
-    ): Promise<ContractNegotiationResponse> {
+    ): Promise<ContractNegotiation> {
         for (let i = 0; i < maxAttempts; i++) {
             const negotiations = await this.getNegotiations();
             const negotiation = negotiations.find(n => n['@id'] === negotiationId);

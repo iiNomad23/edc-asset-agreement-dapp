@@ -1,12 +1,12 @@
 import { Address, Hex } from 'viem';
 
 export interface SiweMessageData {
-    domain: string;
     address: Address;
-    uri: string;
-    version: '1';
     chainId: number;
+    domain: string;
+    uri: string;
     nonce: string;
+    version: '1';
     statement?: string;
     issuedAt?: string;
     expirationTime?: string;
