@@ -1,4 +1,4 @@
-import { AppError } from '../baseAppError.js';
+import { AppError } from './baseAppError.js';
 
 export class UnsupportedChainError extends AppError {
     public readonly statusCode = 400;

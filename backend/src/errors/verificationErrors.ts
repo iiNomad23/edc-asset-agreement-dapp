@@ -1,4 +1,4 @@
-import { AppError } from '../baseAppError.js';
+import { AppError } from './baseAppError.js';
 
 export class AssetNftConfigurationNotFoundError extends AppError {
     public readonly statusCode = 404;
