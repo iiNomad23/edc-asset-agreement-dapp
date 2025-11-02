@@ -7,7 +7,6 @@ export class ApiError extends Error {
 
     constructor(problemDetails: ProblemDetails) {
         super(problemDetails.detail);
-        this.name = 'ApiError';
         this.status = problemDetails.status;
         this.title = problemDetails.title;
         this.type = problemDetails.type;

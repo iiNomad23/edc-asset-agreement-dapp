@@ -40,11 +40,7 @@ const AgreementsPage = (): React.ReactNode => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    assetId: request.assetId,
-                    contractId: request.contractId,
-                    transferType: request.transferType,
-                }),
+                body: JSON.stringify(request),
             });
 
             if (!response.ok) {

@@ -4,7 +4,6 @@ export class TransactionRevertedError extends Error {
 
     constructor(message: string, txHash: string, blockNumber: bigint) {
         super(message);
-        this.name = 'TransactionRevertedError';
         this.txHash = txHash;
         this.blockNumber = blockNumber;
     }
