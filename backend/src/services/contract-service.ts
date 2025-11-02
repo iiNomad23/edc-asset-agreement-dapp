@@ -8,7 +8,7 @@ import {
     NegotiationInitiationError,
     NegotiationNotFoundError,
     NegotiationTimeoutError,
-} from '../errors/domain/contractErrors.js';
+} from '../errors/contractErrors.js';
 
 export class ContractService {
     private readonly baseUrl: string;

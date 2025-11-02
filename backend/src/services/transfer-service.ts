@@ -3,7 +3,7 @@ import { DataAddress, EndpointDataReference, TransferProcess, TransferProcessReq
 import type { ContractService } from './contract-service.js';
 import { Hex } from 'viem';
 import { SiweMessage } from 'viem/siwe';
-import { MissingCounterPartyAddressError, NegotiationNotFoundError } from '../errors/domain/contractErrors.js';
+import { MissingCounterPartyAddressError, NegotiationNotFoundError } from '../errors/contractErrors.js';
 import {
     DataAddressFetchError,
     DataFetchError,
@@ -14,7 +14,7 @@ import {
     TransferNotFoundError,
     TransferTimeoutError,
     UnsupportedMethodError,
-} from '../errors/domain/transferErrors.js';
+} from '../errors/transferErrors.js';
 import { ProxiedBackendError } from '../errors/proxy/proxiedBackendError.js';
 
 interface FetchDataProps {

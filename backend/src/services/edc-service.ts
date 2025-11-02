@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { CatalogAsset, CatalogEnvelop, CatalogQueryRequest } from '../types/catalog.js';
-import { CatalogFetchError } from '../errors/domain/catalogErrors.js';
+import { CatalogFetchError } from '../errors/catalogErrors.js';
 
 export class EDCService {
     private readonly baseUrl: string;

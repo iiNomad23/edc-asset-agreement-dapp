@@ -12,7 +12,7 @@ import {
     OwnerOfTokenIdFetchError,
     TokenIdFetchError,
     UnsupportedChainError,
-} from '../errors/domain/blockchainErrors.js';
+} from '../errors/blockchainErrors.js';
 
 const SUPPORTED_CHAINS: Record<number, Chain> = {
     1: mainnet,
