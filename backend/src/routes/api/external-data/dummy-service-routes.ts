@@ -11,13 +11,17 @@ const verificationSchema = {
             signature: { type: 'string' },
             message: {
                 type: 'object',
-                required: ['address', 'chainId', 'domain', 'nonce', 'uri'],
+                required: ['address', 'chainId', 'domain', 'uri', 'nonce', 'version'],
                 properties: {
                     address: { type: 'string' },
                     chainId: { type: 'number' },
                     domain: { type: 'string' },
-                    nonce: { type: 'string' },
                     uri: { type: 'string' },
+                    nonce: { type: 'string' },
+                    version: { type: 'string' },
+                    statement: { type: 'string' },
+                    issuedAt: { type: 'string' },
+                    expirationTime: { type: 'string' },
                 },
             },
         },
@@ -29,7 +33,7 @@ export default async function dummyServiceRoutes(fastify: FastifyInstance) {
 
     fastify.post<{ Body: VerificationRequest }>('/api/dummy-service/fetch-data', {
         schema: verificationSchema,
-    }, async (request, reply) => {
+    }, async (request, _reply) => {
         const { correlationId, signature, message } = request.body;
 
         fastify.log.info({

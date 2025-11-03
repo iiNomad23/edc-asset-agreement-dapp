@@ -74,6 +74,6 @@ export function errorHandler(
     const problemDetails = createProblemDetails(error);
     return reply
         .code(problemDetails.status)
-        .header('Content-Type', 'application/problem+json')
+        .header('Content-Type', 'application/json')
         .send(problemDetails);
 }
