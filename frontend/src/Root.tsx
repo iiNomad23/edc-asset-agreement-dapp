@@ -10,8 +10,8 @@ import { useTheme } from 'next-themes';
 const queryClient = new QueryClient();
 
 const Root = (): React.ReactElement => {
-    const { theme } = useTheme();
-    const isDarkMode = theme === 'dark';
+    const { resolvedTheme } = useTheme();
+    const isDarkMode = resolvedTheme === 'dark';
 
     return (
         <WagmiProvider config={config}>
