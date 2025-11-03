@@ -20,7 +20,7 @@ const SUPPORTED_CHAINS: Record<number, Chain> = {
     31337: hardhat,
 };
 
-export class NFTService {
+export class BlockchainService {
     private readonly rpcUrl: string;
 
     constructor(rpcUrl: string) {

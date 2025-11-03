@@ -1,7 +1,7 @@
 import { Hex, verifyMessage } from 'viem';
 import type { TransferService } from './transfer-service.js';
 import type { ContractService } from './contract-service.js';
-import type { NFTService } from './nft-service.js';
+import type { BlockchainService } from './blockchain-service.js';
 import type { EDCService } from './edc-service.js';
 import { SiweMessageData, VerificationRequest, VerificationResponse } from '../types/verification.js';
 import { createSiweMessage, SiweMessage } from 'viem/siwe';
@@ -23,18 +23,18 @@ export class VerificationService {
     private readonly edcService: EDCService;
     private readonly transferService: TransferService;
     private readonly contractService: ContractService;
-    private readonly nftService: NFTService;
+    private readonly blockchainService: BlockchainService;
 
     constructor(
         edcService: EDCService,
         transferService: TransferService,
         contractService: ContractService,
-        nftService: NFTService,
+        blockchainService: BlockchainService,
     ) {
         this.edcService = edcService;
         this.transferService = transferService;
         this.contractService = contractService;
-        this.nftService = nftService;
+        this.blockchainService = blockchainService;
     }
 
     private async verifySiweMessage(message: SiweMessageData, signature: Hex): Promise<boolean> {
@@ -130,7 +130,7 @@ export class VerificationService {
         const ownerAddress = request.message.address;
         const agreementId = matchingAgreement['@id'];
 
-        const nftVerification = await this.nftService.verifyNFTOwnership(
+        const nftVerification = await this.blockchainService.verifyNFTOwnership(
             contractAddress,
             ownerAddress,
             agreementId,
