@@ -4,9 +4,8 @@ import { AppError } from '../baseAppError.js';
 export class ProxiedBackendError extends AppError {
     public readonly statusCode: number;
 
-    constructor(problemDetails: ProblemDetails) {
-        super(problemDetails.detail);
-        this.statusCode = problemDetails.status;
-        this.name = problemDetails.title;
+    constructor(problemDetails: Partial<ProblemDetails>) {
+        super(problemDetails.detail ?? 'An error occurred while fetching data, check backend logs for details.');
+        this.statusCode = problemDetails.status ?? 500;
     }
 }

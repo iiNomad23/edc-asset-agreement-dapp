@@ -1,6 +1,7 @@
+import axios from 'axios';
 import type { FastifyInstance } from 'fastify';
 import type { VerificationRequest } from '../../../types/verification.js';
-import { constants } from 'http2';
+import { DummyServiceData } from '../../../types/dummy-service.js';
 
 const verificationSchema = {
     body: {
@@ -11,13 +12,17 @@ const verificationSchema = {
             signature: { type: 'string' },
             message: {
                 type: 'object',
-                required: ['address', 'chainId', 'domain', 'nonce', 'uri'],
+                required: ['address', 'chainId', 'domain', 'uri', 'nonce', 'version'],
                 properties: {
                     address: { type: 'string' },
                     chainId: { type: 'number' },
                     domain: { type: 'string' },
-                    nonce: { type: 'string' },
                     uri: { type: 'string' },
+                    nonce: { type: 'string' },
+                    version: { type: 'string' },
+                    statement: { type: 'string' },
+                    issuedAt: { type: 'string' },
+                    expirationTime: { type: 'string' },
                 },
             },
         },
@@ -29,7 +34,7 @@ export default async function dummyServiceRoutes(fastify: FastifyInstance) {
 
     fastify.post<{ Body: VerificationRequest }>('/api/dummy-service/fetch-data', {
         schema: verificationSchema,
-    }, async (request, reply) => {
+    }, async (request, _reply) => {
         const { correlationId, signature, message } = request.body;
 
         fastify.log.info({
@@ -50,7 +55,15 @@ export default async function dummyServiceRoutes(fastify: FastifyInstance) {
             data: result.data,
         }, result.message);
 
-        // TODO: add fetch of dummy-service data here
-        return reply.code(constants.HTTP_STATUS_OK).send([3]);
+        const dummyServiceResponse = await axios.get<DummyServiceData>(
+            'http://provider-dummy-service:8000/api/v1/data',
+        );
+
+        fastify.log.info({
+            correlationId,
+            dataItemCount: dummyServiceResponse.data.length,
+        }, 'Successfully fetched data from dummy service');
+
+        return dummyServiceResponse.data;
     });
 }

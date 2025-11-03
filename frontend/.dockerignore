@@ -1,0 +1,22 @@
+# Ignore local environment files (for development only)
+.env.local
+.env*.local
+
+# Ignore build artifacts
+node_modules
+dist
+
+# Ignore git files
+.git
+.gitignore
+
+# Ignore IDE files
+.vscode
+.idea
+
+# Ignore test files
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+coverage

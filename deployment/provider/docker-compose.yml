@@ -1,0 +1,25 @@
+services:
+  provider-dapp-backend:
+    image: localhost:5000/provider-dapp-backend:latest
+    container_name: provider-dapp-backend
+    restart: always
+    ports:
+      - "8192:8190"
+    env_file:
+      - backend/.env
+    networks:
+      - mvd
+
+  provider-dapp-frontend:
+    image: localhost:5000/provider-dapp-frontend:latest
+    container_name: provider-dapp-frontend
+    restart: always
+    ports:
+      - "5175:8080"
+    networks:
+      - mvd
+
+networks:
+  mvd:
+    name: mvd
+    external: true

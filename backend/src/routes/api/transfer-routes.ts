@@ -13,12 +13,11 @@ interface FetchDataParams {
 const transferProcessSchema = {
     body: {
         type: 'object',
-        required: ['connectorId', 'counterPartyAddress', 'contractId', 'assetId'],
+        required: ['assetId', 'contractId'],
         properties: {
-            connectorId: { type: 'string' },
-            counterPartyAddress: { type: 'string' },
-            contractId: { type: 'string' },
             assetId: { type: 'string' },
+            contractId: { type: 'string' },
+            transferType: { type: 'string' },
         },
     },
 };
@@ -46,7 +45,7 @@ export default async function transferRoutes(fastify: FastifyInstance) {
     });
 
     fastify.get<{ Params: TransferStatusParams }>('/api/transfers/:transferId/wait',
-        async (request, reply) => {
+        async (request, _reply) => {
             return await transferService.waitForTransferStarted(request.params.transferId);
         },
     );

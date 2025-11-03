@@ -1,4 +1,5 @@
 import { OdrlPolicy } from './policy.js';
+import { Address } from 'viem';
 
 interface AssetDistribution {
     '@type': string;
@@ -18,7 +19,7 @@ export interface CatalogAsset {
     id: string;
     chainId?: string;
     chainName?: string;
-    contractAddress?: string;
+    contractAddress?: Address;
     'dcat:distribution'?: AssetDistribution[];
     'odrl:hasPolicy'?: OdrlPolicy;
 }

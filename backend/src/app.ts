@@ -9,7 +9,7 @@ import assetRoutes from './routes/api/asset-routes.js';
 import contractRoutes from './routes/api/contract-routes.js';
 import { TransferService } from './services/transfer-service.js';
 import transferRoutes from './routes/api/transfer-routes.js';
-import { NFTService } from './services/nft-service.js';
+import { BlockchainService } from './services/blockchain-service.js';
 import { VerificationService } from './services/verification-service.js';
 import dummyServiceRoutes from './routes/api/external-data/dummy-service-routes.js';
 import { errorHandler } from './middleware/errorHandlerMiddleware.js';
@@ -44,18 +44,18 @@ export async function buildApp() {
         contractService,
     );
 
-    const nftService = new NFTService('');
+    const blockchainService = new BlockchainService('');
     const verificationService = new VerificationService(
         edcService,
         transferService,
         contractService,
-        nftService
+        blockchainService
     );
 
     fastify.decorate('edcService', edcService);
     fastify.decorate('contractService', contractService);
     fastify.decorate('transferService', transferService);
-    fastify.decorate('nftService', nftService);
+    fastify.decorate('blockchainService', blockchainService);
     fastify.decorate('verificationService', verificationService);
 
     await fastify.register(healthRoutes);

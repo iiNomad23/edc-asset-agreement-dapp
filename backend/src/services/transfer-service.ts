@@ -187,13 +187,15 @@ export class TransferService {
                     });
                     return response.data;
                 } catch (error) {
+                    if (axios.isAxiosError(error) && error.response?.data) {
+                        throw new ProxiedBackendError(error.response.data);
+                    }
                     throw new DataFetchError();
                 }
             }
             case 'POST': {
                 try {
-                    // TODO: use endpoint parameter after deployment
-                    const response = await axios.post('http://localhost:8190/api/dummy-service/fetch-data', props.body, {
+                    const response = await axios.post(endpoint, props.body, {
                         headers: {
                             'Authorization': authToken,
                             'Content-Type': 'application/json',
@@ -202,8 +204,7 @@ export class TransferService {
                     return response.data;
                 } catch (error) {
                     if (axios.isAxiosError(error) && error.response?.data) {
-                        const problemDetails = error.response.data;
-                        throw new ProxiedBackendError(problemDetails);
+                        throw new ProxiedBackendError(error.response.data);
                     }
                     throw new DataFetchError();
                 }

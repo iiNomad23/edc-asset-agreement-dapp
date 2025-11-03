@@ -1,0 +1,25 @@
+services:
+  consumer-dapp-backend:
+    image: localhost:5000/consumer-dapp-backend:latest
+    container_name: consumer-dapp-backend
+    restart: always
+    ports:
+      - "8191:8190"
+    env_file:
+      - backend/.env
+    networks:
+      - mvd
+
+  consumer-dapp-frontend:
+    image: localhost:5000/consumer-dapp-frontend:latest
+    container_name: consumer-dapp-frontend
+    restart: always
+    ports:
+      - "5174:8080"
+    networks:
+      - mvd
+
+networks:
+  mvd:
+    name: mvd
+    external: true
