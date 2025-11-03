@@ -1,6 +1,7 @@
+import axios from 'axios';
 import type { FastifyInstance } from 'fastify';
 import type { VerificationRequest } from '../../../types/verification.js';
-import { constants } from 'http2';
+import { DummyServiceData } from '../../../types/dummy-service.js';
 
 const verificationSchema = {
     body: {
@@ -54,7 +55,15 @@ export default async function dummyServiceRoutes(fastify: FastifyInstance) {
             data: result.data,
         }, result.message);
 
-        // TODO: add fetch of dummy-service data here
-        return reply.code(constants.HTTP_STATUS_OK).send([3]);
+        const dummyServiceResponse = await axios.get<DummyServiceData>(
+            'http://provider-dummy-service:8000/api/v1/data',
+        );
+
+        fastify.log.info({
+            correlationId,
+            dataItemCount: dummyServiceResponse.data.length,
+        }, 'Successfully fetched data from dummy service');
+
+        return dummyServiceResponse.data;
     });
 }

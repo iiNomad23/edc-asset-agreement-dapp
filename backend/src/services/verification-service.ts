@@ -1,4 +1,4 @@
-import { Address, Hex, verifyMessage } from 'viem';
+import { Hex, verifyMessage } from 'viem';
 import type { TransferService } from './transfer-service.js';
 import type { ContractService } from './contract-service.js';
 import type { NFTService } from './nft-service.js';
@@ -72,8 +72,7 @@ export class VerificationService {
     private async getMatchingTransfer(correlationId: string): Promise<TransferProcess> {
         const transfers = await this.transferService.getTransfers();
         const matchingTransfer = transfers.find(
-            // transfer => transfer['@id'] === request.correlationId,  // TODO: we need to use this after we deploy on the linux server
-            transfer => transfer.correlationId === correlationId,
+            transfer => transfer['@id'] === correlationId,
         );
 
         if (!matchingTransfer) {
@@ -115,10 +114,10 @@ export class VerificationService {
 
         const matchingTransfer = await this.getMatchingTransfer(request.correlationId);
         const matchingAgreement = await this.getMatchingAgreement(matchingTransfer.contractId);
-        const asset = await this.getMatchingAsset(matchingTransfer.assetId);
+        const matchingAsset = await this.getMatchingAsset(matchingTransfer.assetId);
 
-        const contractAddress = asset.contractAddress as Address;
-        const chainId = Number(asset.chainId);
+        const contractAddress = matchingAsset.contractAddress;
+        const chainId = Number(matchingAsset.chainId);
 
         if (!contractAddress || !chainId) {
             throw new AssetNftConfigurationNotFoundError();
@@ -128,7 +127,7 @@ export class VerificationService {
             throw new ChainIdMismatchError();
         }
 
-        const ownerAddress = request.message.address as Address;
+        const ownerAddress = request.message.address;
         const agreementId = matchingAgreement['@id'];
 
         const nftVerification = await this.nftService.verifyNFTOwnership(

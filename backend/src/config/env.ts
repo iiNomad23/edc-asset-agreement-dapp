@@ -1,7 +1,12 @@
 import dotenv from 'dotenv';
+import fs from 'fs';
 import path from 'path';
 
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+const envPath = fs.existsSync(path.resolve(process.cwd(), '.env'))
+    ? path.resolve(process.cwd(), '.env')
+    : path.resolve(process.cwd(), '.env.local');
+
+dotenv.config({ path: envPath });
 
 function requireEnv(name: string): string {
     const value = process.env[name];
@@ -11,18 +16,22 @@ function requireEnv(name: string): string {
     return value;
 }
 
+function getEnv(name: string, defaultValue: string = ''): string {
+    return process.env[name] ?? defaultValue;
+}
+
 // CORS
 export const FRONTEND_URL = requireEnv('FRONTEND_URL');
 
 // Server
-export const PORT = Number(process.env.PORT ?? 3000);
-export const HOST = process.env.HOST ?? '0.0.0.0';
-export const LOG_LEVEL = process.env.LOG_LEVEL ?? 'info';
+export const PORT = Number(getEnv('PORT', '3000'));
+export const HOST = getEnv('HOST', '0.0.0.0');
+export const LOG_LEVEL = getEnv('LOG_LEVEL', 'info');
 
 // EDC Configuration
 export const CONSUMER_CATALOG_QUERY_URL = requireEnv('CONSUMER_CATALOG_QUERY_URL');
 export const CONSUMER_MANAGEMENT_URL = requireEnv('CONSUMER_MANAGEMENT_URL');
-export const PROVIDER_ID = requireEnv('PROVIDER_ID');
-export const PROVIDER_QNA_DSP_URL = requireEnv('PROVIDER_QNA_DSP_URL');
+export const PROVIDER_ID = getEnv('PROVIDER_ID', '');
+export const PROVIDER_QNA_DSP_URL = getEnv('PROVIDER_QNA_DSP_URL', '');
 export const PROVIDER_QNA_PUBLIC_API = requireEnv('PROVIDER_QNA_PUBLIC_API');
 export const API_KEY = requireEnv('API_KEY');
