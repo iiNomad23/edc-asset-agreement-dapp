@@ -19,7 +19,7 @@ export function generateAgreementMetadata(
     return {
         name: `EDC Agreement #${agreement['@id']}`,
         description: `Access token for asset ${agreement.assetId} under negotiated policy.`,
-        external_url: `https://github.com/eclipse-edc`,
+        external_url: 'https://github.com/eclipse-edc',
         image: imageUrl,
         attributes: [
             {

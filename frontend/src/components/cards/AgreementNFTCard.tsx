@@ -155,7 +155,7 @@ const AgreementNFTCard: React.FC<AgreementNFTCardProps> = ({ tokenId, contractAd
                                         </p>
                                         {agreement.revokeReason && (
                                             <p className="text-xs border-t pt-1 mt-1">
-                                                "{agreement.revokeReason}"
+                                                {`"${agreement.revokeReason}"`}
                                             </p>
                                         )}
                                     </div>

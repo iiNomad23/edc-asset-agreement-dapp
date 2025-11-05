@@ -12,7 +12,7 @@ export interface TransferProcess {
     type: string;
     assetId: string;
     contractId: string;
-    callbackAddresses: any[];
+    callbackAddresses: unknown[];
     correlationId?: string;
     errorDetail?: string;
 }

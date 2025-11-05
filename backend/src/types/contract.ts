@@ -15,7 +15,7 @@ export interface ContractNegotiation {
     state: string;
     counterPartyId: string;
     counterPartyAddress: string;
-    callbackAddresses: any[];
+    callbackAddresses: unknown[];
     createdAt: number;
     contractAgreementId?: string;
     errorDetail?: string;

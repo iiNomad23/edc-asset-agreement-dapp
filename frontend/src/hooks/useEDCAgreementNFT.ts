@@ -1,5 +1,5 @@
 import { useAccount, useChainId, usePublicClient, useReadContract, useWriteContract } from 'wagmi';
-import { Address, Hash } from 'viem';
+import { AbiEvent, Address, getAbiItem, Hash } from 'viem';
 import { EDC_AGREEMENT_NFT_ABI } from '@/config/abis/contractAgreementNFTabi.ts';
 import { useEffect, useState } from 'react';
 import { CONTRACT_ADDRESSES } from '@/config/constants.ts';
@@ -167,6 +167,18 @@ export function useMintTransactionHash(tokenId?: bigint) {
                     ? currentBlock - MAX_BLOCKS_TO_SEARCH
                     : 0n;
 
+                const eventName = 'AgreementMinted';
+                const agreementMintedEvent = getAbiItem({
+                    abi: EDC_AGREEMENT_NFT_ABI,
+                    name: eventName,
+                }) as AbiEvent | undefined;
+
+                if (!agreementMintedEvent) {
+                    setError(`${eventName} event not found in ABI`);
+                    setIsLoading(false);
+                    return;
+                }
+
                 while (fromBlock <= currentBlock) {
                     const toBlock = fromBlock + CHUNK_SIZE > currentBlock
                         ? currentBlock
@@ -175,20 +187,7 @@ export function useMintTransactionHash(tokenId?: bigint) {
                     try {
                         const logs = await publicClient.getLogs({
                             address: contractAddress,
-                            event: {
-                                type: 'event',
-                                name: 'AgreementMinted',
-                                inputs: [
-                                    { type: 'uint256', name: 'tokenId', indexed: true },
-                                    { type: 'string', name: 'agreementId', indexed: false },
-                                    { type: 'string', name: 'assetId', indexed: false },
-                                    { type: 'address', name: 'minter', indexed: true },
-                                    { type: 'address', name: 'recipient', indexed: true },
-                                    { type: 'string', name: 'providerId', indexed: false },
-                                    { type: 'string', name: 'consumerId', indexed: false },
-                                    { type: 'uint256', name: 'signedAt', indexed: false },
-                                ],
-                            },
+                            event: agreementMintedEvent,
                             args: {
                                 tokenId: tokenId,
                             },

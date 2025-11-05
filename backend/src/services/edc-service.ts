@@ -30,7 +30,7 @@ export class EDCService {
             );
 
             return response.data;
-        } catch (error) {
+        } catch {
             throw new CatalogFetchError();
         }
     }

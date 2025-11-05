@@ -78,7 +78,7 @@ export class TransferService {
             );
 
             return response.data;
-        } catch (error) {
+        } catch {
             throw new TransferInitiationError();
         }
     }
@@ -129,7 +129,7 @@ export class TransferService {
             );
 
             return response.data;
-        } catch (error) {
+        } catch {
             throw new TransferFetchError();
         }
     }
@@ -153,7 +153,7 @@ export class TransferService {
             );
 
             return response.data;
-        } catch (error) {
+        } catch {
             throw new EdrFetchError();
         }
     }
@@ -171,7 +171,7 @@ export class TransferService {
             );
 
             return response.data;
-        } catch (error) {
+        } catch {
             throw new DataAddressFetchError();
         }
     }

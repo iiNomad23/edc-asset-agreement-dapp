@@ -38,7 +38,7 @@ export class BlockchainService {
                 chain,
                 transport: this.rpcUrl !== '' ? http(this.rpcUrl) : http(),
             });
-        } catch (e) {
+        } catch {
             throw new CreatePublicClientError();
         }
     }
@@ -57,7 +57,7 @@ export class BlockchainService {
                 functionName: 'getAgreement',
                 args: [tokenId],
             }) as NFTMetadata;
-        } catch (e) {
+        } catch {
             throw new MetadataFetchError();
         }
     }
@@ -76,7 +76,7 @@ export class BlockchainService {
                 functionName: 'agreementIdToTokenId',
                 args: [agreementId],
             }) as bigint;
-        } catch (e) {
+        } catch {
             throw new TokenIdFetchError();
         }
     }
@@ -95,7 +95,7 @@ export class BlockchainService {
                 functionName: 'ownerOf',
                 args: [tokenId],
             }) as Address;
-        } catch (e) {
+        } catch {
             throw new OwnerOfTokenIdFetchError();
         }
     }

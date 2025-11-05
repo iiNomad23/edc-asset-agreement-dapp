@@ -122,7 +122,7 @@ const MyNFTsPage: React.FC = () => {
                     <Shield className="w-16 h-16 text-muted-foreground mb-4" />
                     <h3 className="text-xl font-semibold mb-2">No NFTs Yet</h3>
                     <p className="text-muted-foreground max-w-md mb-4">
-                        You haven't minted any agreement NFTs yet. Visit the Agreements page to mint your first NFT.
+                        You have not minted any agreement NFTs yet. Visit the Agreements page to mint your first NFT.
                     </p>
                     <Button asChild>
                         <Link to="/agreements">Go to Agreements</Link>
