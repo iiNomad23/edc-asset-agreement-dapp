@@ -64,7 +64,7 @@ export class VerificationService {
                 message: siweMessage,
                 signature: signature,
             });
-        } catch (error) {
+        } catch {
             throw new SignatureVerificationFailedError();
         }
     }

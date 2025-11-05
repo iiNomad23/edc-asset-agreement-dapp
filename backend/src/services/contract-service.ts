@@ -51,7 +51,7 @@ export class ContractService {
             );
 
             return response.data;
-        } catch (error) {
+        } catch {
             throw new NegotiationInitiationError();
         }
     }
@@ -75,7 +75,7 @@ export class ContractService {
             );
 
             return response.data;
-        } catch (error) {
+        } catch {
             throw new NegotiationFetchError();
         }
     }
@@ -129,7 +129,7 @@ export class ContractService {
             );
 
             return response.data;
-        } catch (error) {
+        } catch {
             throw new AgreementFetchError();
         }
     }
