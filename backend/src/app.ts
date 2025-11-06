@@ -11,7 +11,7 @@ import { TransferService } from './services/transfer-service.js';
 import transferRoutes from './routes/api/transfer-routes.js';
 import { BlockchainService } from './services/blockchain-service.js';
 import { VerificationService } from './services/verification-service.js';
-import dummyServiceRoutes from './routes/api/external-data/dummy-service-routes.js';
+import dummyServiceRoutes from './routes/api/external/dummy-service-routes.js';
 import { errorHandler } from './middleware/errorHandlerMiddleware.js';
 
 export async function buildApp() {

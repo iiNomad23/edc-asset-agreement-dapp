@@ -1,7 +1,7 @@
 import { ProblemDetails } from '../../types/errors.js';
 import { AppError } from '../baseAppError.js';
 
-export class ProxiedBackendError extends AppError {
+export class ProxiedExternalError extends AppError {
     public readonly statusCode: number;
 
     constructor(problemDetails: Partial<ProblemDetails>) {

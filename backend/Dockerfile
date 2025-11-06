@@ -1,8 +1,8 @@
-FROM node:22.19-alpine AS base
+FROM node:22-alpine AS base
 WORKDIR /app
 EXPOSE 8190
 
-FROM node:22.19-alpine AS build
+FROM node:22-alpine AS build
 WORKDIR /build
 COPY . .
 RUN npm ci --ignore-scripts
