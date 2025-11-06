@@ -1,5 +1,11 @@
-import axios from 'axios';
-import { DataAddress, EndpointDataReference, TransferProcess, TransferProcessRequest } from '../types/transfer.js';
+import axios, { AxiosResponse } from 'axios';
+import {
+    DataAddress,
+    EndpointDataReference,
+    ProxiedExternalData,
+    TransferProcess,
+    TransferProcessRequest,
+} from '../types/transfer.js';
 import type { ContractService } from './contract-service.js';
 import { Hex } from 'viem';
 import { SiweMessage } from 'viem/siwe';
@@ -15,7 +21,7 @@ import {
     TransferTimeoutError,
     UnsupportedMethodError,
 } from '../errors/transferErrors.js';
-import { ProxiedBackendError } from '../errors/proxy/proxiedBackendError.js';
+import { ProxiedExternalError } from '../errors/proxy/proxiedExternalError.js';
 
 interface FetchDataProps {
     method: string,
@@ -176,20 +182,41 @@ export class TransferService {
         }
     }
 
+    private validateSuccessResponse(response: AxiosResponse<ProxiedExternalData>): void {
+        if (!response.data) {
+            return;
+        }
+
+        const data = response.data;
+        if (data.success || !data.error) {
+            return;
+        }
+
+        throw new ProxiedExternalError(data.error);
+    }
+
     async fetchData(endpoint: string, authToken: string, props: FetchDataProps): Promise<unknown> {
         switch (props.method) {
             case 'GET': {
                 try {
-                    const response = await axios.get(endpoint, {
+                    const response: AxiosResponse<ProxiedExternalData> = await axios.get(endpoint, {
                         headers: {
                             'Authorization': authToken,
                         },
                     });
+
+                    this.validateSuccessResponse(response);
+
                     return response.data;
                 } catch (error) {
-                    if (axios.isAxiosError(error) && error.response?.data) {
-                        throw new ProxiedBackendError(error.response.data);
+                    if (error instanceof ProxiedExternalError) {
+                        throw error;
                     }
+
+                    if (axios.isAxiosError(error) && error.response?.data?.error) {
+                        throw new ProxiedExternalError(error.response.data.error);
+                    }
+
                     throw new DataFetchError();
                 }
             }
@@ -201,11 +228,19 @@ export class TransferService {
                             'Content-Type': 'application/json',
                         },
                     });
+
+                    this.validateSuccessResponse(response);
+
                     return response.data;
                 } catch (error) {
-                    if (axios.isAxiosError(error) && error.response?.data) {
-                        throw new ProxiedBackendError(error.response.data);
+                    if (error instanceof ProxiedExternalError) {
+                        throw error;
                     }
+
+                    if (axios.isAxiosError(error) && error.response?.data?.error) {
+                        throw new ProxiedExternalError(error.response.data.error);
+                    }
+
                     throw new DataFetchError();
                 }
             }

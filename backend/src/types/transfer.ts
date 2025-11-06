@@ -1,5 +1,6 @@
 import { Hex } from 'viem';
 import { SiweMessage } from 'viem/siwe';
+import { ProblemDetails } from './errors.js';
 
 export interface TransferProcessRequest {
     assetId: string;
@@ -44,4 +45,10 @@ export interface FetchDataRequest {
     correlationId: string;
     signature: Hex;
     message: SiweMessage;
+}
+
+export interface ProxiedExternalData {
+    success?: boolean;
+    data?: unknown;
+    error?: ProblemDetails;
 }
