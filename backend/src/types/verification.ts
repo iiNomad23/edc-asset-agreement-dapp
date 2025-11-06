@@ -18,7 +18,7 @@ export interface VerificationRequest {
     message: SiweMessageData;
 }
 
-export interface NFTMetadata {
+export interface NftMetadata {
     agreementId: string;
     assetId: string;
     providerId: string;
@@ -26,6 +26,11 @@ export interface NFTMetadata {
     signedAt: bigint;
     expiresAt: bigint;
     isRevoked: boolean;
+}
+
+export interface NftVerificationResult {
+    tokenId: bigint;
+    metadata: NftMetadata;
 }
 
 export interface VerificationResponse {

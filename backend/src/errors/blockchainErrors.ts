@@ -35,10 +35,10 @@ export class OwnerOfTokenIdFetchError extends AppError {
     }
 }
 
-export class NftNotFoundError extends AppError {
+export class NftNotMintedError extends AppError {
     public readonly statusCode = 404;
     public override get message(): string {
-        return 'NFT not found for agreement.';
+        return 'NFT agreement not minted.';
     }
 }
 

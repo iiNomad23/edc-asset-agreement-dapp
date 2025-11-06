@@ -1,12 +1,12 @@
 import { Address, Chain, createPublicClient, http, PublicClient } from 'viem';
-import { NFTMetadata } from '../types/verification.js';
+import { NftMetadata, NftVerificationResult } from '../types/verification.js';
 import { EDC_AGREEMENT_NFT_ABI } from '../config/abis/contractAgreementNFTabi.js';
 import { hardhat, mainnet, sepolia } from 'viem/chains';
 import {
     CreatePublicClientError,
     MetadataFetchError,
     NftExpiredAgreementError,
-    NftNotFoundError,
+    NftNotMintedError,
     NftOwnershipVerificationError,
     NftRevokedAgreementError,
     OwnerOfTokenIdFetchError,
@@ -45,9 +45,9 @@ export class BlockchainService {
 
     private async getAgreementMetadata(
         contractAddress: Address,
-        tokenId: bigint,
         chainId: number,
-    ): Promise<NFTMetadata> {
+        tokenId: bigint,
+    ): Promise<NftMetadata> {
         const client = this.createClient(chainId);
 
         try {
@@ -56,7 +56,7 @@ export class BlockchainService {
                 abi: EDC_AGREEMENT_NFT_ABI,
                 functionName: 'getAgreement',
                 args: [tokenId],
-            }) as NFTMetadata;
+            }) as NftMetadata;
         } catch {
             throw new MetadataFetchError();
         }
@@ -64,8 +64,8 @@ export class BlockchainService {
 
     private async getTokenByAgreementId(
         contractAddress: Address,
-        agreementId: string,
         chainId: number,
+        agreementId: string,
     ): Promise<bigint> {
         const client = this.createClient(chainId);
 
@@ -83,8 +83,8 @@ export class BlockchainService {
 
     private async getOwnerOfTokenId(
         contractAddress: Address,
-        tokenId: bigint,
         chainId: number,
+        tokenId: bigint,
     ): Promise<Address> {
         const client = this.createClient(chainId);
 
@@ -100,26 +100,26 @@ export class BlockchainService {
         }
     }
 
-    async verifyNFTOwnership(
+    async verifyNFTAgreement(
         contractAddress: Address,
         ownerAddress: Address,
-        agreementId: string,
         chainId: number,
-    ): Promise<{ tokenId: bigint; metadata: NFTMetadata }> {
-        const tokenId = await this.getTokenByAgreementId(contractAddress, agreementId, chainId);
+        agreementId: string,
+    ): Promise<NftVerificationResult> {
+        const tokenId = await this.getTokenByAgreementId(contractAddress, chainId, agreementId);
         if (tokenId === 0n) {
-            throw new NftNotFoundError();
+            throw new NftNotMintedError();
         }
 
-        const actualOwner = await this.getOwnerOfTokenId(contractAddress, tokenId, chainId);
+        const actualOwner = await this.getOwnerOfTokenId(contractAddress, chainId, tokenId);
         if (actualOwner.toLowerCase() !== ownerAddress.toLowerCase()) {
             throw new NftOwnershipVerificationError();
         }
 
         const metadata = await this.getAgreementMetadata(
             contractAddress,
-            tokenId,
             chainId,
+            tokenId,
         );
 
         if (metadata.isRevoked) {

@@ -1,9 +1,9 @@
 import { AppError } from './baseAppError.js';
 
-export class AssetNftConfigurationNotFoundError extends AppError {
+export class RequiredAssetNftConfigurationNotFoundError extends AppError {
     public readonly statusCode = 404;
     public override get message(): string {
-        return 'Asset NFT configuration not found.';
+        return 'Required asset NFT configuration not found.';
     }
 }
 
@@ -24,14 +24,7 @@ export class SignatureVerificationFailedError extends AppError {
 export class ChainIdMismatchError extends AppError {
     public readonly statusCode = 400;
     public override get message(): string {
-        return 'Chain ID mismatch.';
-    }
-}
-
-export class AssetIdMismatchError extends AppError {
-    public readonly statusCode = 403;
-    public override get message(): string {
-        return 'NFT asset ID does not match transfer asset.';
+        return 'Chain ID does not match.';
     }
 }
 
@@ -53,5 +46,12 @@ export class TransferMismatchError extends AppError {
     public readonly statusCode = 403;
     public override get message(): string {
         return 'Transfer does not match.';
+    }
+}
+
+export class NftAgreementMetadataMismatchError extends AppError {
+    public readonly statusCode = 403;
+    public override get message(): string {
+        return 'NFT metadata does not match off chain metadata.';
     }
 }
