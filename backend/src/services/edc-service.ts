@@ -14,7 +14,7 @@ export class EDCService {
     async getCachedCatalog(): Promise<CatalogEnvelop[]> {
         const payload: CatalogQueryRequest = {
             '@context': ['https://w3id.org/edc/connector/management/v0.0.1'],
-            '@type': 'QuerySpec'
+            '@type': 'QuerySpec',
         };
 
         try {
@@ -24,9 +24,9 @@ export class EDCService {
                 {
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Api-Key': this.apiKey
-                    }
-                }
+                        'X-Api-Key': this.apiKey,
+                    },
+                },
             );
 
             return response.data;

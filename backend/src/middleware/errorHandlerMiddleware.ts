@@ -15,14 +15,14 @@ function createProblemDetails(error: Error): ProblemDetails {
         type: 'https://datatracker.ietf.org/doc/html/rfc9110#section-15.6.1',
         title: 'Internal Server Error',
         status: 500,
-        detail: 'Unknown internal server error'
+        detail: 'Unknown internal server error',
     };
 }
 
 export function errorHandler(
     error: FastifyError | Error,
     request: FastifyRequest,
-    reply: FastifyReply
+    reply: FastifyReply,
 ) {
     request.log.error({
         err: error,

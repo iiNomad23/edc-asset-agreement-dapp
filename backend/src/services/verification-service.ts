@@ -10,11 +10,11 @@ import { ContractAgreement } from '../types/contract.js';
 import { CatalogAsset } from '../types/catalog.js';
 import {
     AgreementMismatchError,
-    AssetIdMismatchError,
     AssetMismatchError,
-    AssetNftConfigurationNotFoundError,
     ChainIdMismatchError,
     InvalidSignatureError,
+    NftAgreementMetadataMismatchError,
+    RequiredAssetNftConfigurationNotFoundError,
     SignatureVerificationFailedError,
     TransferMismatchError,
 } from '../errors/verificationErrors.js';
@@ -120,7 +120,7 @@ export class VerificationService {
         const chainId = Number(matchingAsset.chainId);
 
         if (!contractAddress || !chainId) {
-            throw new AssetNftConfigurationNotFoundError();
+            throw new RequiredAssetNftConfigurationNotFoundError();
         }
 
         if (request.message.chainId !== chainId) {
@@ -130,16 +130,42 @@ export class VerificationService {
         const ownerAddress = request.message.address;
         const agreementId = matchingAgreement['@id'];
 
-        const nftVerification = await this.blockchainService.verifyNFTOwnership(
+        const nftVerificationResult = await this.blockchainService.verifyNFTAgreement(
             contractAddress,
             ownerAddress,
-            agreementId,
             chainId,
+            agreementId,
         );
 
-        const metadata = nftVerification.metadata;
-        if (metadata.assetId !== matchingTransfer.assetId) {
-            throw new AssetIdMismatchError();
+        const metadata = nftVerificationResult.metadata;
+
+        if (matchingAsset.agreementExpiresAfter) {
+            const agreementExpiresAfterSeconds = BigInt(matchingAsset.agreementExpiresAfter);
+            const expectedExpiresAt = metadata.signedAt + agreementExpiresAfterSeconds;
+
+            if (metadata.expiresAt !== expectedExpiresAt) {
+                throw new NftAgreementMetadataMismatchError();
+            }
+        }
+
+        if (metadata.agreementId !== agreementId) {
+            throw new NftAgreementMetadataMismatchError();
+        }
+
+        if (metadata.assetId !== matchingAgreement.assetId) {
+            throw new NftAgreementMetadataMismatchError();
+        }
+
+        if (metadata.signedAt !== BigInt(matchingAgreement.contractSigningDate)) {
+            throw new NftAgreementMetadataMismatchError();
+        }
+
+        if (metadata.providerId !== matchingAgreement.providerId) {
+            throw new NftAgreementMetadataMismatchError();
+        }
+
+        if (metadata.consumerId !== matchingAgreement.consumerId) {
+            throw new NftAgreementMetadataMismatchError();
         }
 
         return {
@@ -149,11 +175,11 @@ export class VerificationService {
                 ownerAddress: ownerAddress,
                 chainId: chainId,
                 transferId: matchingTransfer['@id'],
-                tokenId: nftVerification.tokenId.toString(),
+                tokenId: nftVerificationResult.tokenId.toString(),
                 nftMetadata: {
-                    ...nftVerification.metadata,
-                    signedAt: nftVerification.metadata.signedAt.toString(),
-                    expiresAt: nftVerification.metadata.expiresAt.toString(),
+                    ...nftVerificationResult.metadata,
+                    signedAt: nftVerificationResult.metadata.signedAt.toString(),
+                    expiresAt: nftVerificationResult.metadata.expiresAt.toString(),
                 },
             },
         };

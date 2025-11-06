@@ -33,9 +33,9 @@ export class ContractService {
                 permission: request.policy['odrl:permission'],
                 prohibition: request.policy['odrl:prohibition'],
                 obligation: request.policy['odrl:obligation'],
-                target: request.assetId
+                target: request.assetId,
             },
-            callbackAddresses: []
+            callbackAddresses: [],
         };
 
         try {
@@ -45,9 +45,9 @@ export class ContractService {
                 {
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Api-Key': this.apiKey
-                    }
-                }
+                        'X-Api-Key': this.apiKey,
+                    },
+                },
             );
 
             return response.data;
@@ -59,7 +59,7 @@ export class ContractService {
     async getNegotiations(): Promise<ContractNegotiation[]> {
         const payload = {
             '@context': ['https://w3id.org/edc/connector/management/v0.0.1'],
-            '@type': 'QuerySpec'
+            '@type': 'QuerySpec',
         };
 
         try {
@@ -69,9 +69,9 @@ export class ContractService {
                 {
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Api-Key': this.apiKey
-                    }
-                }
+                        'X-Api-Key': this.apiKey,
+                    },
+                },
             );
 
             return response.data;
@@ -83,7 +83,7 @@ export class ContractService {
     async waitForNegotiationFinalized(
         negotiationId: string,
         maxAttempts = 20,
-        delayMs = 2000
+        delayMs = 2000,
     ): Promise<ContractNegotiation> {
         for (let i = 0; i < maxAttempts; i++) {
             const negotiations = await this.getNegotiations();
@@ -113,7 +113,7 @@ export class ContractService {
     async getAgreements(): Promise<ContractAgreement[]> {
         const payload = {
             '@context': ['https://w3id.org/edc/connector/management/v0.0.1'],
-            '@type': 'QuerySpec'
+            '@type': 'QuerySpec',
         };
 
         try {
@@ -123,9 +123,9 @@ export class ContractService {
                 {
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Api-Key': this.apiKey
-                    }
-                }
+                        'X-Api-Key': this.apiKey,
+                    },
+                },
             );
 
             return response.data;

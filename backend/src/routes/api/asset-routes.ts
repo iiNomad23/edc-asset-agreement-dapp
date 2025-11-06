@@ -9,7 +9,7 @@ export default async function assetRoutes(fastify: FastifyInstance) {
 
         const response: AssetsResponse = {
             totalAssets: assets.length,
-            assets
+            assets,
         };
 
         return response;

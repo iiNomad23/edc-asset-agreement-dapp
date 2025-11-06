@@ -15,7 +15,7 @@ const CatalogAssetCard: React.FC<CatalogAssetCardProps> = ({ asset, isSubscribin
     const assetPolicy = asset['odrl:hasPolicy'];
 
     return (
-        <Card className="flex flex-col h-full">
+        <Card className="flex flex-col h-full min-w-[320px]">
             <CardHeader>
                 <div className="flex items-start justify-between">
                     <div className="flex-1">

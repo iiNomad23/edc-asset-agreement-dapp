@@ -4,7 +4,7 @@ import { ArrowDownToLine, ArrowRightLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
-import { formatTimestamp } from '@/lib/utils.ts';
+import { cn, formatTimestamp } from '@/lib/utils.ts';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx';
 
 interface DataTransferCardProps {
@@ -19,7 +19,7 @@ const DataTransferCard: React.FC<DataTransferCardProps> = ({ transfer, onFetchDa
     const isInErrorState = transfer.state === 'TERMINATED' || transfer.state === 'ERROR';
 
     return (
-        <Card className={isInErrorState ? 'opacity-60 border-red-200' : ''}>
+        <Card className={cn('min-w-[320px]', isInErrorState && 'opacity-60 border-red-200')}>
             <CardHeader>
                 <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -46,7 +46,7 @@ const DataTransferCard: React.FC<DataTransferCardProps> = ({ transfer, onFetchDa
                                 </TooltipContent>
                             </Tooltip>
                         ) : (
-                            <Badge variant="default">
+                            <Badge variant="secondary">
                                 {transfer.state}
                             </Badge>
                         )}

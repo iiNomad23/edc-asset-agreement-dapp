@@ -47,7 +47,7 @@ export function AppSidebar() {
             <SidebarContent>
                 <SidebarGroup>
                     <div className={'flex flex-col gap-2'}>
-                        <SidebarGroupLabel className="h-10 flex items-center text-lg font-bold">EDC dApp</SidebarGroupLabel>
+                        <SidebarGroupLabel className="h-10 flex items-center text-lg font-bold">EDC-dApp</SidebarGroupLabel>
                         <hr />
                         <SidebarGroupContent>
                             <SidebarMenu>

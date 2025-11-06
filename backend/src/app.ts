@@ -49,7 +49,7 @@ export async function buildApp() {
         edcService,
         transferService,
         contractService,
-        blockchainService
+        blockchainService,
     );
 
     fastify.decorate('edcService', edcService);

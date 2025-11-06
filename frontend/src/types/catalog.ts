@@ -20,6 +20,7 @@ export interface CatalogAsset {
     chainId?: string;
     chainName?: string;
     contractAddress?: Address;
+    agreementExpiresAfter?: string;
     'dcat:distribution'?: AssetDistribution[];
     'odrl:hasPolicy'?: OdrlPolicy;
 }

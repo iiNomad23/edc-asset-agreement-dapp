@@ -87,7 +87,7 @@ export default async function transferRoutes(fastify: FastifyInstance) {
                     signature,
                     message,
                 },
-            }
+            },
         );
     });
 }
