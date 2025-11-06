@@ -2,7 +2,7 @@ FROM nginxinc/nginx-unprivileged:1.26-alpine AS base
 WORKDIR /app
 EXPOSE 8080
 
-FROM node:22.19-alpine AS build
+FROM node:22-alpine AS build
 WORKDIR /build
 COPY . .
 RUN npm ci --ignore-scripts
