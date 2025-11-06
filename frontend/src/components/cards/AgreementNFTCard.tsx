@@ -4,7 +4,7 @@ import { ExternalLink, Loader2, Shield, ShieldAlert, ShieldX } from 'lucide-reac
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
-import { formatTimestamp } from '@/lib/utils.ts';
+import { cn, formatTimestamp } from '@/lib/utils.ts';
 import { Address } from 'viem';
 import { shortenId } from '@/lib/nftMetadataUtils.ts';
 import { useAccount, useChainId } from 'wagmi';
@@ -49,16 +49,16 @@ const AgreementNFTCard: React.FC<AgreementNFTCardProps> = ({ tokenId, contractAd
         return null;
     }
 
-    const canRevoke = address && !agreement.isRevoked;
     const isExpired = agreement.expiresAt !== 0n && agreement.expiresAt <= BigInt(Math.floor(Date.now() / 1000));
+    const isRevoked = agreement.isRevoked;
 
     return (
-        <Card className={agreement.isRevoked ? 'opacity-60 border-red-200' : ''}>
+        <Card className={cn('min-w-[320px]', (isRevoked || isExpired) && 'opacity-60 border-red-200')}>
             <CardHeader>
                 <div className="flex items-start justify-between">
                     <div className="flex-1">
                         <CardTitle className="text-lg flex items-center gap-2">
-                            {isExpired ? (
+                            {isRevoked || isExpired ? (
                                 <ShieldAlert className="w-5 h-5 text-red-500" />
                             ) : (
                                 <Shield className="w-5 h-5 text-green-500" />
@@ -123,7 +123,7 @@ const AgreementNFTCard: React.FC<AgreementNFTCardProps> = ({ tokenId, contractAd
                         </CardDescription>
                     </div>
                     <div className="flex items-center gap-2 h-7">
-                        {canRevoke && (
+                        {address && !isRevoked && !isExpired && (
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button
@@ -140,7 +140,7 @@ const AgreementNFTCard: React.FC<AgreementNFTCardProps> = ({ tokenId, contractAd
                                 </TooltipContent>
                             </Tooltip>
                         )}
-                        {agreement.isRevoked ? (
+                        {isRevoked ? (
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Badge variant="destructive" className="cursor-help">
@@ -161,9 +161,13 @@ const AgreementNFTCard: React.FC<AgreementNFTCardProps> = ({ tokenId, contractAd
                                     </div>
                                 </TooltipContent>
                             </Tooltip>
+                        ) : isExpired ? (
+                            <Badge variant="destructive">
+                                EXPIRED
+                            </Badge>
                         ) : (
-                            <Badge variant={isExpired ? 'destructive' : 'default'}>
-                                {isExpired ? 'EXPIRED' : 'VALID'}
+                            <Badge variant="secondary">
+                                VALID
                             </Badge>
                         )}
                     </div>
@@ -181,11 +185,19 @@ const AgreementNFTCard: React.FC<AgreementNFTCardProps> = ({ tokenId, contractAd
                             <p className="font-mono text-xs">{formatTimestamp(Number(agreement.signedAt) * 1000)}</p>
                         </div>
                     </div>
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-4">
                         <div>
                             <p className="text-muted-foreground mb-1">Asset ID</p>
                             <p className="font-mono text-xs break-all">{agreement.assetId}</p>
                         </div>
+                        {agreement.expiresAt > 0n && (
+                            <div>
+                                <p className="text-muted-foreground mb-1">Expires At</p>
+                                <p className="font-mono text-xs break-all">{formatTimestamp(Number(agreement.expiresAt) * 1000)}</p>
+                            </div>
+                        )}
+                    </div>
+                    <div className="space-y-2">
                         <div>
                             <p className="text-muted-foreground mb-1">Provider</p>
                             <p className="font-mono text-xs break-all">{agreement.providerId}</p>
@@ -194,12 +206,6 @@ const AgreementNFTCard: React.FC<AgreementNFTCardProps> = ({ tokenId, contractAd
                             <p className="text-muted-foreground mb-1">Consumer</p>
                             <p className="font-mono text-xs break-all">{agreement.consumerId}</p>
                         </div>
-                        {agreement.expiresAt > 0n && (
-                            <div>
-                                <p className="text-muted-foreground mb-1">Expires At</p>
-                                <p className="text-xs">{formatTimestamp(Number(agreement.signedAt) * 1000)}</p>
-                            </div>
-                        )}
                     </div>
                 </div>
 

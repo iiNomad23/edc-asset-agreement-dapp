@@ -9,6 +9,7 @@ import { useAccount, useChainId, useSignMessage } from 'wagmi';
 import { createSiweMessage, generateSiweNonce, SiweMessage } from 'viem/siwe';
 import { CatalogAsset } from '@/types/catalog.ts';
 import { handleApiError } from '@/lib/apiUtils.ts';
+import { useAssetsQuery } from '@/hooks/useAssetsQuery.ts';
 
 const TransfersPage: React.FC = () => {
     const [fetchingTransferId, setFetchingTransferId] = useState<string | null>(null);
@@ -16,7 +17,8 @@ const TransfersPage: React.FC = () => {
     const { signMessageAsync } = useSignMessage();
     const currentChainId = useChainId();
 
-    const { data: transfers, isLoading } = useQuery({
+    const { data: assetsData, isLoading: isLoadingAssets } = useAssetsQuery();
+    const { data: transfers, isLoading: isLoadingTransfers } = useQuery({
         queryKey: ['transfers'],
         queryFn: async () => {
             const response = await fetch(`${BACKEND_URL}/api/transfers`);
@@ -28,12 +30,11 @@ const TransfersPage: React.FC = () => {
         refetchInterval: 30000,
     });
 
-    const getAssetDetails = async (assetId: string) => {
-        const response = await fetch(`${BACKEND_URL}/api/assets`);
-        if (!response.ok) {
-            await handleApiError(response);
+    const getAssetForTransfer = (assetId: string): CatalogAsset | undefined => {
+        if (!assetsData?.assets) {
+            return undefined;
         }
-        const assetsData = await response.json();
+
         return assetsData.assets.find((asset: CatalogAsset) => asset.id === assetId);
     };
 
@@ -72,7 +73,7 @@ const TransfersPage: React.FC = () => {
         return {
             signature: signature,
             message: {
-                ...message
+                ...message,
             },
         };
     };
@@ -81,13 +82,13 @@ const TransfersPage: React.FC = () => {
         try {
             setFetchingTransferId(transfer['@id']);
 
-            const asset: CatalogAsset = await getAssetDetails(transfer.assetId);
+            const asset = getAssetForTransfer(transfer.assetId);
             if (!asset) {
                 // noinspection ExceptionCaughtLocallyJS
                 throw new Error(`Asset ${transfer.assetId} not found`);
             }
 
-            if (asset.contractAddress && asset.chainId && asset.chainName) {
+            if (asset.contractAddress && asset.chainId) {
                 const { signature, message } = await generateSIWESignature(Number(asset.chainId), transfer);
 
                 const response = await fetch(
@@ -149,7 +150,7 @@ const TransfersPage: React.FC = () => {
         }
     };
 
-    if (isLoading) {
+    if (isLoadingTransfers || isLoadingAssets) {
         return (
             <div className="flex items-center justify-center p-8">
                 <Loader2 className="w-8 h-8 animate-spin" />
@@ -167,7 +168,7 @@ const TransfersPage: React.FC = () => {
             </div>
 
             {transfers && transfers.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
                     {transfers.map((transfer) => (
                         <DataTransferCard
                             key={transfer['@id']}

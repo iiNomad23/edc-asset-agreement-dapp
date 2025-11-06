@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { ContractAgreement } from '@/types/contract.ts';
-import AgreementCard from '@/components/cards/ContractAgreementCard.tsx';
+import ContractAgreementCard from '@/components/cards/ContractAgreementCard.tsx';
 import { useAccount, useChainId } from 'wagmi';
 import { useEDCAgreementNFT } from '@/hooks/useEDCAgreementNFT.ts';
 import { toast } from 'sonner';
@@ -13,6 +13,8 @@ import { DEFAULT_BADGE_IMAGE } from '@/config/constants.ts';
 import { TransactionRevertedError } from '@/errors/transactionRevertedError.ts';
 import { TransferProcessRequest } from '@/types/transfer.ts';
 import { handleApiError } from '@/lib/apiUtils.ts';
+import { CatalogAsset } from '@/types/catalog.ts';
+import { useAssetsQuery } from '@/hooks/useAssetsQuery.ts';
 
 const AgreementsPage = (): React.ReactNode => {
     const [mintingAgreementId, setMintingAgreementId] = useState<string | null>(null);
@@ -21,7 +23,8 @@ const AgreementsPage = (): React.ReactNode => {
     const chainId = useChainId();
     const { mintAgreement } = useEDCAgreementNFT();
 
-    const { data: agreements, isLoading } = useQuery({
+    const { data: assetsData, isLoading: isLoadingAssets } = useAssetsQuery();
+    const { data: agreements, isLoading: isLoadingAgreements } = useQuery({
         queryKey: ['agreements'],
         queryFn: async () => {
             const response = await fetch(`${BACKEND_URL}/api/contracts/agreements`);
@@ -82,6 +85,14 @@ const AgreementsPage = (): React.ReactNode => {
         },
     });
 
+    const getAssetForAgreement = (assetId: string): CatalogAsset | undefined => {
+        if (!assetsData?.assets) {
+            return undefined;
+        }
+
+        return assetsData.assets.find((asset: CatalogAsset) => asset.id === assetId);
+    };
+
     const handleMintNFT = async (agreement: ContractAgreement) => {
         if (!address) {
             toast.error('Please connect your wallet first');
@@ -90,6 +101,20 @@ const AgreementsPage = (): React.ReactNode => {
 
         try {
             setMintingAgreementId(agreement['@id']);
+
+            const asset = getAssetForAgreement(agreement.assetId);
+            if (!asset) {
+                // noinspection ExceptionCaughtLocallyJS
+                throw new Error(`Asset ${agreement.assetId} not found`);
+            }
+
+            const signedAtInSeconds = BigInt(agreement.contractSigningDate);
+            let expiresAtInSeconds = 0n;
+
+            if (asset.agreementExpiresAfter) {
+                const agreementExpiresAfterInSeconds = BigInt(asset.agreementExpiresAfter);
+                expiresAtInSeconds = signedAtInSeconds + agreementExpiresAfterInSeconds;
+            }
 
             const metadata = generateAgreementMetadata(agreement, DEFAULT_BADGE_IMAGE);
             const tokenURI = metadataToDataURI(metadata);
@@ -100,8 +125,8 @@ const AgreementsPage = (): React.ReactNode => {
                 assetId: agreement.assetId,
                 providerId: agreement.providerId,
                 consumerId: agreement.consumerId,
-                signedAt: BigInt(agreement.contractSigningDate),
-                expiresAt: 0n,
+                signedAt: signedAtInSeconds,
+                expiresAt: expiresAtInSeconds,
                 tokenURI: tokenURI,
             });
 
@@ -132,7 +157,7 @@ const AgreementsPage = (): React.ReactNode => {
         transferProcessMutation.mutate(request);
     };
 
-    if (isLoading) {
+    if (isLoadingAgreements || isLoadingAssets) {
         return (
             <div className="flex items-center justify-center p-8">
                 <Loader2 className="w-8 h-8 animate-spin" />
@@ -166,17 +191,22 @@ const AgreementsPage = (): React.ReactNode => {
             )}
 
             {agreements && agreements.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {agreements.map((agreement) => (
-                        <AgreementCard
-                            key={agreement['@id']}
-                            agreement={agreement}
-                            isConnected={isConnected}
-                            isMinting={isMinting(agreement['@id'])}
-                            isInitiatingTransfer={isInitiatingTransfer(agreement['@id'])}
-                            onMint={() => handleMintNFT(agreement)}
-                            onInitiateTransfer={() => handleInitiateTransfer(agreement)} />
-                    ))}
+                <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                    {agreements.map((agreement) => {
+                        const asset = getAssetForAgreement(agreement.assetId);
+                        return (
+                            <ContractAgreementCard
+                                key={agreement['@id']}
+                                agreement={agreement}
+                                asset={asset}
+                                isConnected={isConnected}
+                                isMinting={isMinting(agreement['@id'])}
+                                isInitiatingTransfer={isInitiatingTransfer(agreement['@id'])}
+                                onMint={() => handleMintNFT(agreement)}
+                                onInitiateTransfer={() => handleInitiateTransfer(agreement)}
+                            />
+                        );
+                    })}
                 </div>
             ) : (
                 <div className="text-center p-8 border rounded-lg">

@@ -44,7 +44,7 @@ const AssetsPage = (): React.ReactNode => {
         onSuccess: async (data) => {
             try {
                 const response = await fetch(
-                    `${BACKEND_URL}/api/contracts/negotiations/${data['@id']}/wait`
+                    `${BACKEND_URL}/api/contracts/negotiations/${data['@id']}/wait`,
                 );
 
                 const result = await response.json();
@@ -62,7 +62,7 @@ const AssetsPage = (): React.ReactNode => {
                 toast.error('Negotiation Failed', {
                     description: error instanceof Error ? error.message : 'Negotiation initiated but failed to complete',
                     duration: 5000,
-                })
+                });
             } finally {
                 setNegotiatingAssetId(null);
             }
@@ -209,7 +209,8 @@ const AssetsPage = (): React.ReactNode => {
                     return (
                         <div key={catalog['@id']} className="space-y-3">
                             {datasets.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div
+                                    className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
                                     {datasets.map((asset) => {
                                         const policy = asset['odrl:hasPolicy'];
                                         const policyId = policy?.['@id'];

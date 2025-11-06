@@ -4,9 +4,12 @@ import { ArrowRightLeft, FileText, Loader2, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.tsx';
 import { formatTimestamp } from '@/lib/utils.ts';
+import { CatalogAsset } from '@/types/catalog.ts';
+import { Badge } from '@/components/ui/badge.tsx';
 
 interface AgreementCardProps {
     agreement: ContractAgreement;
+    asset?: CatalogAsset;
     isConnected: boolean;
     isMinting: boolean;
     isInitiatingTransfer: boolean;
@@ -14,8 +17,9 @@ interface AgreementCardProps {
     onInitiateTransfer: () => void;
 }
 
-const AgreementCard: React.FC<AgreementCardProps> = ({
+const ContractAgreementCard: React.FC<AgreementCardProps> = ({
     agreement,
+    asset,
     isConnected,
     isMinting,
     isInitiatingTransfer,
@@ -23,9 +27,11 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
     onInitiateTransfer,
 }) => {
     const formattedDate = formatTimestamp(agreement.contractSigningDate * 1000);
+    const isNftRequired = asset?.contractAddress && asset?.chainId;
+    const assetChainName = asset?.chainName;
 
     return (
-        <Card className="flex flex-col h-full">
+        <Card className="flex flex-col h-full min-w-[320px]">
             <CardHeader>
                 <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -38,6 +44,13 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
                                 Type: {agreement['@type']}
                             </p>
                         </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2 h-7">
+                        {isNftRequired && (
+                            <Badge variant="secondary">
+                                NFT Required
+                            </Badge>
+                        )}
                     </div>
                 </div>
             </CardHeader>
@@ -53,11 +66,19 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
                             <p className="font-mono text-xs">{formattedDate}</p>
                         </div>
                     </div>
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-4">
                         <div>
                             <p className="text-muted-foreground mb-1">Asset ID</p>
                             <p className="font-mono text-xs break-all">{agreement.assetId}</p>
                         </div>
+                        {isNftRequired && assetChainName && (
+                            <div>
+                                <p className="text-muted-foreground mb-1">Chain Name</p>
+                                <p className="font-mono text-xs break-all">{assetChainName}</p>
+                            </div>
+                        )}
+                    </div>
+                    <div className="space-y-2">
                         <div>
                             <p className="text-muted-foreground mb-1">Provider</p>
                             <p className="font-mono text-xs break-all">{agreement.providerId}</p>
@@ -111,4 +132,4 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
     );
 };
 
-export default AgreementCard;
+export default ContractAgreementCard;

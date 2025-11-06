@@ -21,6 +21,6 @@ const router = createBrowserRouter([
 
 const App = (): React.ReactElement => {
     return <RouterProvider router={router} />;
-}
+};
 
 export default App;
