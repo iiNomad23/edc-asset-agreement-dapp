@@ -6,7 +6,7 @@ export default async function healthRoutes(fastify: FastifyInstance) {
             status: 'ok',
             message: 'Backend is running',
             timestamp: new Date().toISOString(),
-            uptime: process.uptime()
+            uptime: process.uptime(),
         };
     });
 }

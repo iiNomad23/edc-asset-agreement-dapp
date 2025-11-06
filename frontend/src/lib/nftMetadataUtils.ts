@@ -9,12 +9,12 @@ export interface NftMetadata {
         trait_type: string;
         value: string | number;
     }>;
-    full_agreement: ContractAgreement
+    full_agreement: ContractAgreement;
 }
 
 export function generateAgreementMetadata(
     agreement: ContractAgreement,
-    imageUrl: string
+    imageUrl: string,
 ): NftMetadata {
     return {
         name: `EDC Agreement #${agreement['@id']}`,
