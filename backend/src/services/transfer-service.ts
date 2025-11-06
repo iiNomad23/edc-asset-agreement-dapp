@@ -21,7 +21,7 @@ import {
     TransferTimeoutError,
     UnsupportedMethodError,
 } from '../errors/transferErrors.js';
-import { ProxiedExternalError } from '../errors/proxy/proxiedExternalError.js';
+import { ProxiedExternalError } from '../errors/external/proxiedExternalError.js';
 
 interface FetchDataProps {
     method: string,

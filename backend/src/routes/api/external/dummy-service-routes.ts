@@ -34,7 +34,7 @@ const verificationSchema = {
 export default async function dummyServiceRoutes(fastify: FastifyInstance) {
     const { verificationService } = fastify;
 
-    fastify.post<{ Body: VerificationRequest }>('/api/dummy-service/fetch-data', {
+    fastify.post<{ Body: VerificationRequest }>('/api/external/dummy-service/fetch-data', {
         schema: verificationSchema,
     }, async (request, _reply) => {
         try {
