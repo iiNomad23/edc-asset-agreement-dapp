@@ -180,7 +180,6 @@ contract EDCAgreementNFTTest is Test {
             )
         );
 
-        // Encode metadata as base64 data URI
         string memory base64JSON = Base64.encode(bytes(metadata));
         string memory tokenURI = string(
             abi.encodePacked("data:application/json;base64,", base64JSON)
@@ -204,7 +203,6 @@ contract EDCAgreementNFTTest is Test {
 
         emit log_named_uint("Gas used for minting (Full Storage + Data URI)", gasUsed);
 
-        // Full storage should use <2M gas
         assertLt(gasUsed, 2000000, "Gas usage should be lower than 2M");
     }
 
@@ -235,7 +233,6 @@ contract EDCAgreementNFTTest is Test {
 
         emit log_named_uint("Gas used for minting (IPFS)", gasUsed);
 
-        // IPFS should use <500k gas
         assertLt(gasUsed, 500000, "Gas usage should be lower than 500k");
     }
 
@@ -364,7 +361,7 @@ contract EDCAgreementNFTTest is Test {
         EDCAgreementNFT.AgreementMetadata memory revokedAgreement = nft.getAgreement(tokenId);
         assertTrue(revokedAgreement.isRevoked);
 
-        emit log_string("Integration test passed: Mint -> Verify -> Revoke (No IPFS needed)");
+        emit log_string("Integration test passed: Mint -> Verify -> Revoke");
     }
 
     function testDifferentImageURLFormats() public {
@@ -712,7 +709,7 @@ contract EDCAgreementNFTTest is Test {
             tokenURI
         );
 
-        // Fast forward past expiration
+        // fast forward past expiration
         vm.warp(block.timestamp + 2 days);
 
         vm.expectRevert(abi.encodeWithSelector(EDCAgreementNFT.AgreementAlreadyExpired.selector));

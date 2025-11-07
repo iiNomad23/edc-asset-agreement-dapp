@@ -227,7 +227,7 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, AccessControl, ReentrancyG
     }
 
     /**
-     * @dev Owner can withdraw contract balance to an address
+     * @dev Owner can withdraw contract balance to their own address
      */
     function withdraw() external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
         uint256 balance = address(this).balance;
