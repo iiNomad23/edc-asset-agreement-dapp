@@ -117,7 +117,6 @@ describe('EDCAgreementNFT', () => {
                 return `data:application/json;base64,${btoa(JSON.stringify(metadata))}`;
             };
 
-            // Mint 3 NFTs with same image
             for (let i = 0; i < 3; i++) {
                 const agreementId = `urn:uuid:agreement-${i}`;
                 const assetId = `urn:asset:asset-${i}`;
@@ -291,7 +290,6 @@ describe('EDCAgreementNFT', () => {
             const mintPrice = await contract.read.mintPrice();
             assert.equal(mintPrice, newPrice);
 
-            // Reset price
             await contract.write.updateMintPrice([0n]);
         });
 
@@ -328,10 +326,7 @@ describe('EDCAgreementNFT', () => {
             const balance = await publicClient.getBalance({ address: contract.address });
             assert.equal(balance, mintPrice);
 
-            // Withdraw to clean up for next test
             await contract.write.withdraw();
-
-            // Reset price
             await contract.write.updateMintPrice([0n]);
         });
 
@@ -366,13 +361,11 @@ describe('EDCAgreementNFT', () => {
             const balanceBefore = await publicClient.getBalance({ address: contract.address });
             assert.equal(balanceBefore, mintPrice);
 
-            // Withdraw
             await contract.write.withdraw();
 
             const balanceAfter = await publicClient.getBalance({ address: contract.address });
             assert.equal(balanceAfter, 0n);
 
-            // Reset price
             await contract.write.updateMintPrice([0n]);
         });
     });
@@ -465,11 +458,10 @@ describe('EDCAgreementNFT', () => {
 
             const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
 
-            console.log(`\n📊 Gas Usage (Full Storage + Data URI):`);
+            console.log(`\nGas Usage (Full Storage + Data URI):`);
             console.log(`- Mint: ${receipt.gasUsed} gas`);
             console.log(`- Estimated cost @ 20 gwei: ~${(Number(receipt.gasUsed) * 20 * 3000 / 1e9).toFixed(4)} USD\n`);
 
-            // Full storage should use ~2M gas
             assert.ok(receipt.gasUsed < 2000000n, `Gas usage should be lower than 2M - Used gas ${receipt.gasUsed}`);
         });
 
@@ -497,12 +489,11 @@ describe('EDCAgreementNFT', () => {
 
             const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
 
-            console.log(`\n📊 Gas Usage (IPFS URI):`);
+            console.log(`\nGas Usage (IPFS URI):`);
             console.log(`- Mint: ${receipt.gasUsed} gas`);
             console.log(`- Estimated cost @ 20 gwei: ~${(Number(receipt.gasUsed) * 20 * 3000 / 1e9).toFixed(4)} USD`);
             console.log(`- Savings vs Base64: ~${((2000000 - Number(receipt.gasUsed)) / 2000000 * 100).toFixed(1)}%\n`);
 
-            // IPFS should use <500k gas
             assert.ok(receipt.gasUsed < 500000n, `Gas usage should be lower than 500k - Used: ${receipt.gasUsed}`);
         });
     });
@@ -532,7 +523,6 @@ describe('EDCAgreementNFT', () => {
 
             const tokenId = await contract.read.agreementIdToTokenId([agreementId]);
 
-            // Revoke
             const revokeHash = await contract.write.revokeAgreement([
                 tokenId,
                 'Testing revocation',
