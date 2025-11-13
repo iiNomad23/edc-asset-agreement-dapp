@@ -31,8 +31,8 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, AccessControl, ReentrancyG
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
-    uint256 public totalSupply = 0;
-    uint256 public mintPrice = 0 ether;
+    uint256 public totalSupply;
+    uint256 public mintPrice;
 
     struct AgreementMetadata {
         string agreementId;
@@ -125,13 +125,13 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, AccessControl, ReentrancyG
     }
 
     /**
-     * @dev Owner mint function - allows contract owner to mint for any recipient
+     * @dev Allows contract owner to mint for any recipient
      * @param recipient Address to receive the NFT
      * @param agreementId Unique EDC agreement identifier
      * @param assetId ID of the asset in the agreement
      * @param providerId ID of the data provider
      * @param consumerId ID of the data consumer
-     * @param signedAt Timestamp when agreement was signed
+     * @param signedAt Timestamp of finalized agreement between provider and consumer
      * @param expiresAt Timestamp when agreement expires (0 if no expiration)
      * @param _tokenURI URI pointing to the agreement metadata
      */
@@ -158,12 +158,12 @@ contract EDCAgreementNFT is ERC721, ERC721URIStorage, AccessControl, ReentrancyG
     }
 
     /**
-     * @dev Approved minter mint function - allows approved minters to mint only for themselves
+     * @dev Allows approved minters to mint for themselves with payment
      * @param agreementId Unique EDC agreement identifier
      * @param assetId ID of the asset in the agreement
      * @param providerId ID of the data provider
      * @param consumerId ID of the data consumer
-     * @param signedAt Timestamp when agreement was signed
+     * @param signedAt Timestamp of finalized agreement between provider and consumer
      * @param expiresAt Timestamp when agreement expires (0 if no expiration)
      * @param _tokenURI URI pointing to the agreement metadata
      */
