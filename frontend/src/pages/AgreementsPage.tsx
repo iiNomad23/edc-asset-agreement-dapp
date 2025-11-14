@@ -191,7 +191,7 @@ const AgreementsPage = (): React.ReactNode => {
             )}
 
             {agreements && agreements.length > 0 ? (
-                <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                     {agreements.map((agreement) => {
                         const asset = getAssetForAgreement(agreement.assetId);
                         return (

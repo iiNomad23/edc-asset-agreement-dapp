@@ -168,7 +168,7 @@ const TransfersPage: React.FC = () => {
             </div>
 
             {transfers && transfers.length > 0 ? (
-                <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                     {transfers.map((transfer) => (
                         <DataTransferCard
                             key={transfer['@id']}
