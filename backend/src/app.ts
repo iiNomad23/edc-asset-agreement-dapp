@@ -1,6 +1,12 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
-import { API_KEY, CONSUMER_CATALOG_QUERY_URL, CONSUMER_MANAGEMENT_URL, FRONTEND_URL, LOG_LEVEL } from './config/env.js';
+import {
+    API_KEY,
+    CONNECTOR_CATALOG_QUERY_URL,
+    CONNECTOR_MANAGEMENT_URL,
+    FRONTEND_URL,
+    LOG_LEVEL,
+} from './config/env.js';
 import { EDCService } from './services/edc-service.js';
 import { ContractService } from './services/contract-service.js';
 import healthRoutes from './routes/health-routes.js';
@@ -29,17 +35,17 @@ export async function buildApp() {
     fastify.setErrorHandler(errorHandler);
 
     const edcService = new EDCService(
-        CONSUMER_CATALOG_QUERY_URL,
+        CONNECTOR_CATALOG_QUERY_URL,
         API_KEY,
     );
 
     const contractService = new ContractService(
-        CONSUMER_MANAGEMENT_URL,
+        CONNECTOR_MANAGEMENT_URL,
         API_KEY,
     );
 
     const transferService = new TransferService(
-        CONSUMER_MANAGEMENT_URL,
+        CONNECTOR_MANAGEMENT_URL,
         API_KEY,
         contractService,
     );

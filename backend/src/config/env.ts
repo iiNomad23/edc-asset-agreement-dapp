@@ -29,9 +29,7 @@ export const HOST = getEnv('HOST', '0.0.0.0');
 export const LOG_LEVEL = getEnv('LOG_LEVEL', 'info');
 
 // EDC Configuration
-export const CONSUMER_CATALOG_QUERY_URL = requireEnv('CONSUMER_CATALOG_QUERY_URL');
-export const CONSUMER_MANAGEMENT_URL = requireEnv('CONSUMER_MANAGEMENT_URL');
-export const PROVIDER_ID = getEnv('PROVIDER_ID', '');
-export const PROVIDER_QNA_DSP_URL = getEnv('PROVIDER_QNA_DSP_URL', '');
-export const PROVIDER_QNA_PUBLIC_API = requireEnv('PROVIDER_QNA_PUBLIC_API');
+export const CONNECTOR_CATALOG_QUERY_URL = requireEnv('CONNECTOR_CATALOG_QUERY_URL');
+export const CONNECTOR_MANAGEMENT_URL = requireEnv('CONNECTOR_MANAGEMENT_URL');
+export const PROVIDER_QNA_PUBLIC_API = getEnv('PROVIDER_QNA_PUBLIC_API');
 export const API_KEY = requireEnv('API_KEY');
