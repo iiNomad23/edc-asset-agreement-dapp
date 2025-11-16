@@ -161,7 +161,7 @@ export function useMintTransactionHash(tokenId?: bigint) {
 
                 // query in chunks to avoid rate limits by free tier
                 const CHUNK_SIZE = 10000n;
-                const MAX_BLOCKS_TO_SEARCH = 100000n;
+                const MAX_BLOCKS_TO_SEARCH = 200000n;
 
                 let fromBlock = currentBlock > MAX_BLOCKS_TO_SEARCH
                     ? currentBlock - MAX_BLOCKS_TO_SEARCH

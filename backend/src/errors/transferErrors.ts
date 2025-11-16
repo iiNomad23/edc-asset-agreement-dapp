@@ -35,13 +35,6 @@ export class TransferFetchError extends AppError {
     }
 }
 
-export class EdrFetchError extends AppError {
-    public readonly statusCode = 502;
-    public override get message(): string {
-        return 'Failed to fetch endpoint data references.';
-    }
-}
-
 export class DataAddressFetchError extends AppError {
     public readonly statusCode = 502;
     public override get message(): string {

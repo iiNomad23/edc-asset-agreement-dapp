@@ -1,11 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
-import {
-    DataAddress,
-    EndpointDataReference,
-    ProxiedExternalData,
-    TransferProcess,
-    TransferProcessRequest,
-} from '../types/transfer.js';
+import { DataAddress, ProxiedExternalData, TransferProcess, TransferProcessRequest } from '../types/transfer.js';
 import type { ContractService } from './contract-service.js';
 import { Hex } from 'viem';
 import { SiweMessage } from 'viem/siwe';
@@ -13,7 +7,6 @@ import { MissingCounterPartyAddressError, NegotiationNotFoundError } from '../er
 import {
     DataAddressFetchError,
     DataFetchError,
-    EdrFetchError,
     TransferFailedError,
     TransferFetchError,
     TransferInitiationError,
@@ -137,30 +130,6 @@ export class TransferService {
             return response.data;
         } catch {
             throw new TransferFetchError();
-        }
-    }
-
-    async getEndpointDataReferences(): Promise<EndpointDataReference[]> {
-        const payload = {
-            '@context': ['https://w3id.org/edc/connector/management/v0.0.1'],
-            '@type': 'QuerySpec',
-        };
-
-        try {
-            const response = await axios.post(
-                `${this.baseUrl}/api/management/v3/edrs/request`,
-                payload,
-                {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Api-Key': this.apiKey,
-                    },
-                },
-            );
-
-            return response.data;
-        } catch {
-            throw new EdrFetchError();
         }
     }
 
