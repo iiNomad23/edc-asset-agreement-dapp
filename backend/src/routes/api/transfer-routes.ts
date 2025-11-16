@@ -54,10 +54,6 @@ export default async function transferRoutes(fastify: FastifyInstance) {
         return await transferService.getTransfers();
     });
 
-    fastify.get('/api/transfers/edrs', async (_request, _reply) => {
-        return await transferService.getEndpointDataReferences();
-    });
-
     fastify.get<{ Params: FetchDataParams }>('/api/transfers/:transferProcessId/fetch-data',
         async (request, _reply) => {
             const { transferProcessId } = request.params;
