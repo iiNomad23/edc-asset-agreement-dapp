@@ -2,12 +2,10 @@ import { Hex, verifyMessage } from 'viem';
 import type { TransferService } from './transfer-service.js';
 import type { ContractService } from './contract-service.js';
 import type { BlockchainService } from './blockchain-service.js';
-import type { EDCService } from './edc-service.js';
 import { SiweMessageData, VerificationRequest, VerificationResponse } from '../types/verification.js';
 import { createSiweMessage, SiweMessage } from 'viem/siwe';
 import { TransferProcess } from '../types/transfer.js';
 import { ContractAgreement } from '../types/contract.js';
-import { CatalogAsset } from '../types/catalog.js';
 import {
     AgreementMismatchError,
     AssetMismatchError,
@@ -18,22 +16,24 @@ import {
     SignatureVerificationFailedError,
     TransferMismatchError,
 } from '../errors/verificationErrors.js';
+import { EdcService } from './edc-service.js';
+import { Asset } from '../types/edc.js';
 
 export class VerificationService {
-    private readonly edcService: EDCService;
-    private readonly transferService: TransferService;
+    private readonly edcService: EdcService;
     private readonly contractService: ContractService;
+    private readonly transferService: TransferService;
     private readonly blockchainService: BlockchainService;
 
     constructor(
-        edcService: EDCService,
-        transferService: TransferService,
+        edcService: EdcService,
         contractService: ContractService,
+        transferService: TransferService,
         blockchainService: BlockchainService,
     ) {
         this.edcService = edcService;
-        this.transferService = transferService;
         this.contractService = contractService;
+        this.transferService = transferService;
         this.blockchainService = blockchainService;
     }
 
@@ -95,9 +95,9 @@ export class VerificationService {
         return matchingAgreement;
     }
 
-    private async getMatchingAsset(assetId: string): Promise<CatalogAsset> {
+    private async getMatchingAsset(assetId: string): Promise<Asset> {
         const assets = await this.edcService.getAssets();
-        const asset = assets.find(asset => asset.id === assetId);
+        const asset = assets.find(asset => asset['@id'] === assetId);
 
         if (!asset) {
             throw new AssetMismatchError();
@@ -116,8 +116,8 @@ export class VerificationService {
         const matchingAgreement = await this.getMatchingAgreement(matchingTransfer.contractId);
         const matchingAsset = await this.getMatchingAsset(matchingTransfer.assetId);
 
-        const contractAddress = matchingAsset.contractAddress;
-        const chainId = Number(matchingAsset.chainId);
+        const contractAddress = matchingAsset.properties.contractAddress;
+        const chainId = Number(matchingAsset.properties.chainId);
 
         if (!contractAddress || !chainId) {
             throw new RequiredAssetNftConfigurationNotFoundError();
@@ -139,8 +139,8 @@ export class VerificationService {
 
         const metadata = nftVerificationResult.metadata;
 
-        if (matchingAsset.agreementExpiresAfter) {
-            const agreementExpiresAfterSeconds = BigInt(matchingAsset.agreementExpiresAfter);
+        if (matchingAsset.properties.agreementExpiresAfter) {
+            const agreementExpiresAfterSeconds = BigInt(matchingAsset.properties.agreementExpiresAfter);
             const expectedExpiresAt = metadata.signedAt + agreementExpiresAfterSeconds;
 
             if (metadata.expiresAt !== expectedExpiresAt) {

@@ -1,8 +1,8 @@
 import axios from 'axios';
-import { CatalogAsset, CatalogEnvelop, CatalogQueryRequest } from '../types/catalog.js';
-import { CatalogFetchError } from '../errors/catalogErrors.js';
+import { AssetFetchError } from '../errors/edcErrors.js';
+import { Asset } from '../types/edc.js';
 
-export class EDCService {
+export class EdcService {
     private readonly baseUrl: string;
     private readonly apiKey: string;
 
@@ -11,10 +11,12 @@ export class EDCService {
         this.apiKey = apiKey;
     }
 
-    async getCachedCatalog(): Promise<CatalogEnvelop[]> {
-        const payload: CatalogQueryRequest = {
-            '@context': ['https://w3id.org/edc/connector/management/v0.0.1'],
-            '@type': 'QuerySpec',
+    async getAssets(): Promise<Asset[]> {
+        const payload = {
+            "@context": {
+                "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+            },
+            "@type": "QuerySpec"
         };
 
         try {
@@ -31,31 +33,7 @@ export class EDCService {
 
             return response.data;
         } catch {
-            throw new CatalogFetchError();
+            throw new AssetFetchError();
         }
-    }
-
-    async getAssets(): Promise<CatalogAsset[]> {
-        const catalogs = await this.getCachedCatalog();
-        const catalogAssets: CatalogAsset[] = [];
-
-        for (const catalog of catalogs) {
-            if (!catalog['dcat:catalog']) {
-                continue;
-            }
-
-            const catalogArray = Array.isArray(catalog['dcat:catalog'])
-                ? catalog['dcat:catalog']
-                : [catalog['dcat:catalog']];
-
-            for (const catalogItem of catalogArray) {
-                const datasets = catalogItem['dcat:dataset'] ?? [];
-                for (const catalogAsset of datasets) {
-                    catalogAssets.push(catalogAsset);
-                }
-            }
-        }
-
-        return catalogAssets;
     }
 }

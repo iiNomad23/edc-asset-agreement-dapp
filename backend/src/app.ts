@@ -7,11 +7,10 @@ import {
     FRONTEND_URL,
     LOG_LEVEL,
 } from './config/env.js';
-import { EDCService } from './services/edc-service.js';
+import { CatalogService } from './services/catalog-service.js';
 import { ContractService } from './services/contract-service.js';
 import healthRoutes from './routes/health-routes.js';
 import catalogRoutes from './routes/api/catalog-routes.js';
-import assetRoutes from './routes/api/asset-routes.js';
 import contractRoutes from './routes/api/contract-routes.js';
 import { TransferService } from './services/transfer-service.js';
 import transferRoutes from './routes/api/transfer-routes.js';
@@ -19,6 +18,7 @@ import { BlockchainService } from './services/blockchain-service.js';
 import { VerificationService } from './services/verification-service.js';
 import dummyServiceRoutes from './routes/api/external/dummy-service-routes.js';
 import { errorHandler } from './middleware/errorHandlerMiddleware.js';
+import { EdcService } from './services/edc-service.js';
 
 export async function buildApp() {
     const fastify = Fastify({
@@ -34,8 +34,13 @@ export async function buildApp() {
 
     fastify.setErrorHandler(errorHandler);
 
-    const edcService = new EDCService(
+    const catalogService = new CatalogService(
         CONNECTOR_CATALOG_QUERY_URL,
+        API_KEY,
+    );
+
+    const edcService = new EdcService(
+        CONNECTOR_MANAGEMENT_URL,
         API_KEY,
     );
 
@@ -53,12 +58,12 @@ export async function buildApp() {
     const blockchainService = new BlockchainService('');
     const verificationService = new VerificationService(
         edcService,
-        transferService,
         contractService,
+        transferService,
         blockchainService,
     );
 
-    fastify.decorate('edcService', edcService);
+    fastify.decorate('catalogService', catalogService);
     fastify.decorate('contractService', contractService);
     fastify.decorate('transferService', transferService);
     fastify.decorate('blockchainService', blockchainService);
@@ -66,7 +71,6 @@ export async function buildApp() {
 
     await fastify.register(healthRoutes);
     await fastify.register(catalogRoutes);
-    await fastify.register(assetRoutes);
     await fastify.register(contractRoutes);
     await fastify.register(transferRoutes);
     await fastify.register(dummyServiceRoutes);
@@ -76,7 +80,7 @@ export async function buildApp() {
 
 declare module 'fastify' {
     interface FastifyInstance {
-        edcService: EDCService;
+        catalogService: CatalogService;
         contractService: ContractService;
         transferService: TransferService;
         verificationService: VerificationService;
