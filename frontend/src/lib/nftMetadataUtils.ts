@@ -53,10 +53,10 @@ export function metadataToDataURI(metadata: NftMetadata): string {
     return `data:application/json;base64,${base64}`;
 }
 
-export function shortenId(id: string, chars = 4): string {
-    if (id.length <= chars * 2 + 3) {
-        return id;
+export function shortenString(str: string, chars = 4): string {
+    if (str.length <= chars * 2 + 3) {
+        return str;
     }
 
-    return `${id.substring(0, chars)}...${id.substring(id.length - chars)}`;
+    return `${str.substring(0, chars)}...${str.substring(str.length - chars)}`;
 }

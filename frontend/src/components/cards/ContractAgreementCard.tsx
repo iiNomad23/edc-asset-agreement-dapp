@@ -6,29 +6,78 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { formatTimestamp } from '@/lib/utils.ts';
 import { CatalogAsset } from '@/types/catalog.ts';
 import { Badge } from '@/components/ui/badge.tsx';
+import { formatEther } from 'viem';
+import { shortenString } from '@/lib/nftMetadataUtils.ts';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx';
 
 interface AgreementCardProps {
     agreement: ContractAgreement;
-    asset?: CatalogAsset;
     isConnected: boolean;
     isMinting: boolean;
     isInitiatingTransfer: boolean;
     onMint: () => void;
     onInitiateTransfer: () => void;
+    asset?: CatalogAsset;
+    mintPrice?: bigint;
 }
 
 const ContractAgreementCard: React.FC<AgreementCardProps> = ({
     agreement,
-    asset,
     isConnected,
     isMinting,
     isInitiatingTransfer,
     onMint,
     onInitiateTransfer,
+    asset,
+    mintPrice,
 }) => {
     const formattedDate = formatTimestamp(agreement.contractSigningDate * 1000);
     const isNftRequired = asset?.contractAddress && asset?.chainId;
     const assetChainName = asset?.chainName;
+
+    const renderMintButton = () => (
+        <Button
+            onClick={onMint}
+            disabled={!isConnected || isMinting}
+            variant="outline"
+            size="sm"
+            className="w-full"
+        >
+            {isMinting ? (
+                <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Minting NFT...
+                </>
+            ) : mintPrice ? (
+                <>
+                    <span className="flex items-center">
+                        <Shield className="w-4 h-4 mr-2" />
+                        Mint contract agreement NFT
+                    </span>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <span className="flex items-center">
+                                {`(${shortenString(formatEther(mintPrice), 3)} ETH)`}
+                            </span>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                            <div className="space-y-1">
+                                <p className="font-semibold text-sm">Mint Price</p>
+                                <p className="text-xs">
+                                    {`${formatEther(mintPrice)} ETH`}
+                                </p>
+                            </div>
+                        </TooltipContent>
+                    </Tooltip>
+                </>
+            ) : (
+                <>
+                    <Shield className="w-4 h-4 mr-2" />
+                    Mint contract agreement NFT
+                </>
+            )}
+        </Button>
+    );
 
     return (
         <Card className="flex flex-col h-full min-w-[320px]">
@@ -89,25 +138,24 @@ const ContractAgreementCard: React.FC<AgreementCardProps> = ({
                         </div>
                     </div>
                 </div>
-                <Button
-                    onClick={onMint}
-                    disabled={!isConnected || isMinting}
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                >
-                    {isMinting ? (
-                        <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Minting NFT...
-                        </>
-                    ) : (
-                        <>
-                            <Shield className="w-4 h-4 mr-2" />
-                            Mint contract agreement NFT
-                        </>
-                    )}
-                </Button>
+
+                {!isConnected ? (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <span className="flex items-center">
+                                {renderMintButton()}
+                            </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p className="text-xs">
+                                Connect your wallet to mint agreement NFTs
+                            </p>
+                        </TooltipContent>
+                    </Tooltip>
+                ) : (
+                    renderMintButton()
+                )}
+
                 <Button
                     onClick={onInitiateTransfer}
                     disabled={isInitiatingTransfer}

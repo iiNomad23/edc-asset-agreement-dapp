@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Package } from 'lucide-react';
 import CatalogAssetCard from '@/components/cards/CatalogAssetCard.tsx';
 import { CatalogEnvelop } from '@/types/catalog.ts';
 import { ContractNegotiationRequest } from '@/types/contract.ts';
@@ -10,8 +10,11 @@ import { BACKEND_URL } from '@/config/env.ts';
 import { handleApiError } from '@/lib/apiUtils.ts';
 
 const AssetsPage = (): React.ReactNode => {
-    const [selectedConnector, setSelectedConnector] = useState<string>('');
+    const [selectedConnector, setSelectedConnector] = useState<string>('placeholder');
+    const [isSelectingConnector, setIsSelectingConnector] = useState<boolean>(true);
     const [negotiatingAssetId, setNegotiatingAssetId] = useState<string | null>(null);
+
+    const isConnectorSelected = selectedConnector !== '' && selectedConnector !== 'placeholder';
 
     const { data: cachedCatalogEnvelop, isLoading } = useQuery({
         queryKey: ['catalog'],
@@ -100,10 +103,11 @@ const AssetsPage = (): React.ReactNode => {
     }, [cachedCatalogEnvelop]);
 
     useEffect(() => {
-        if (!selectedConnector && connectors.length > 0) {
+        if (connectors.length > 0 && !isConnectorSelected) {
             setSelectedConnector(connectors[0].url);
         }
-    }, [connectors, selectedConnector]);
+        setIsSelectingConnector(false);
+    }, [connectors, isConnectorSelected]);
 
     const handleSubscribe = (assetId: string, policy: OdrlPolicy, selectedConnectorUrl: string) => {
         if (!cachedCatalogEnvelop) {
@@ -155,10 +159,11 @@ const AssetsPage = (): React.ReactNode => {
         );
     }
 
-    if (!cachedCatalogEnvelop || cachedCatalogEnvelop.length === 0) {
+    if (!cachedCatalogEnvelop || cachedCatalogEnvelop.length <= 0) {
         return (
-            <div className="text-center p-8 border rounded-lg">
-                <p className="text-muted-foreground">No assets available</p>
+            <div className="flex flex-col items-center justify-center p-12 text-center border rounded-lg">
+                <Package className="w-16 h-16 text-muted-foreground mb-4" />
+                <h3 className="text-xl font-semibold mb-2">No assets found</h3>
             </div>
         );
     }
@@ -195,6 +200,10 @@ const AssetsPage = (): React.ReactNode => {
                     onChange={(e) => setSelectedConnector(e.target.value)}
                     className="border rounded-md p-2 text-sm bg-background"
                 >
+                    <option value="placeholder" disabled hidden>
+                        {connectors.length > 0 ? 'Select a connector' : 'No connectors available'}
+                    </option>
+
                     {connectors.map((conn) => (
                         <option key={conn.url} value={conn.url}>
                             {`${conn.description} @ ${conn.url}`}
@@ -203,14 +212,30 @@ const AssetsPage = (): React.ReactNode => {
                 </select>
             </div>
 
-            {selectedConnector && matchingCatalogs.length > 0 ? (
+            {connectors.length <= 0 ? (
+                <div className="flex flex-col items-center justify-center p-12 text-center border rounded-lg">
+                    <Package className="w-16 h-16 text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">No assets found</h3>
+                </div>
+            ) : isSelectingConnector ? (
+                <div className="flex items-center justify-center p-8">
+                    <Loader2 className="w-8 h-8 animate-spin" />
+                </div>
+            ) : matchingCatalogs.length <= 0 ? (
+                <div className="flex flex-col items-center justify-center p-12 text-center border rounded-lg">
+                    <Package className="w-16 h-16 text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">No assets found</h3>
+                    <p className="text-muted-foreground max-w-md mb-4">
+                        No assets available for this connector.
+                    </p>
+                </div>
+            ) : (
                 matchingCatalogs.map((catalog) => {
                     const datasets = catalog['dcat:dataset'] ?? [];
                     return (
                         <div key={catalog['@id']} className="space-y-3">
                             {datasets.length > 0 ? (
-                                <div
-                                    className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                                <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                                     {datasets.map((asset) => {
                                         const policy = asset['odrl:hasPolicy'];
                                         const policyId = policy?.['@id'];
@@ -243,10 +268,6 @@ const AssetsPage = (): React.ReactNode => {
                         </div>
                     );
                 })
-            ) : (
-                <div className="text-center text-muted-foreground mt-4">
-                    Please select a connector above to view its assets.
-                </div>
             )}
         </div>
     );

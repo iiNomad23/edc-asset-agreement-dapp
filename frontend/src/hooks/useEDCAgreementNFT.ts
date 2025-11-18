@@ -43,7 +43,7 @@ export function useEDCAgreementNFT() {
         reset,
     } = useWriteContract();
 
-    const mintAgreement = async (params: MintAgreementParams): Promise<string> => {
+    const mintAgreement = async (params: MintAgreementParams, value?: bigint): Promise<string> => {
         reset();
         validatePublicClient(publicClient);
 
@@ -61,6 +61,7 @@ export function useEDCAgreementNFT() {
                 params.tokenURI,
             ],
             account: address,
+            value: value,
         };
 
         const gas = await estimateGasWithBuffer(publicClient, contractCall);
@@ -252,4 +253,15 @@ export function useMintTimestamp(txHash?: Hash) {
     }, [txHash, publicClient]);
 
     return { mintTimestamp, isLoading, error };
+}
+
+export function useMintPrice() {
+    const contractAddress = useContractAddress();
+    const { data, isLoading, error } = useReadContract({
+        address: contractAddress,
+        abi: EDC_AGREEMENT_NFT_ABI,
+        functionName: 'mintPrice',
+    });
+
+    return { mintPrice: data as bigint | undefined, isLoading, error };
 }

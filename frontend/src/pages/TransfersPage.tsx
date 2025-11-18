@@ -3,16 +3,19 @@ import { BACKEND_URL } from '@/config/env.ts';
 import { useQuery } from '@tanstack/react-query';
 import { TransferProcess } from '@/types/transfer.ts';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { ArrowRightLeft, Loader2 } from 'lucide-react';
 import DataTransferCard from '@/components/cards/DataTransferCard.tsx';
 import { useAccount, useChainId, useSignMessage } from 'wagmi';
 import { createSiweMessage, generateSiweNonce, SiweMessage } from 'viem/siwe';
 import { CatalogAsset } from '@/types/catalog.ts';
 import { handleApiError } from '@/lib/apiUtils.ts';
 import { useAssetsQuery } from '@/hooks/useAssetsQuery.ts';
+import { Button } from '@/components/ui/button.tsx';
+import { Link } from 'react-router-dom';
 
 const TransfersPage: React.FC = () => {
     const [fetchingTransferId, setFetchingTransferId] = useState<string | null>(null);
+    const [signingTransferId, setSigningTransferId] = useState<string | null>(null);
     const { address, isConnected } = useAccount();
     const { signMessageAsync } = useSignMessage();
     const currentChainId = useChainId();
@@ -80,8 +83,6 @@ const TransfersPage: React.FC = () => {
 
     const handleFetchData = async (transfer: TransferProcess) => {
         try {
-            setFetchingTransferId(transfer['@id']);
-
             const asset = getAssetForTransfer(transfer.assetId);
             if (!asset) {
                 // noinspection ExceptionCaughtLocallyJS
@@ -89,7 +90,12 @@ const TransfersPage: React.FC = () => {
             }
 
             if (asset.contractAddress && asset.chainId) {
+                setSigningTransferId(transfer['@id']);
+
                 const { signature, message } = await generateSIWESignature(Number(asset.chainId), transfer);
+
+                setSigningTransferId(null);
+                setFetchingTransferId(transfer['@id']);
 
                 const response = await fetch(
                     `${BACKEND_URL}/api/transfers/fetch-data`,
@@ -121,6 +127,8 @@ const TransfersPage: React.FC = () => {
 
                 console.log('Fetched data (with NFT verification):', data);
             } else {
+                setFetchingTransferId(transfer['@id']);
+
                 const response = await fetch(
                     `${BACKEND_URL}/api/transfers/${transfer['@id']}/fetch-data`,
                 );
@@ -147,6 +155,7 @@ const TransfersPage: React.FC = () => {
             });
         } finally {
             setFetchingTransferId(null);
+            setSigningTransferId(null);
         }
     };
 
@@ -169,21 +178,34 @@ const TransfersPage: React.FC = () => {
 
             {transfers && transfers.length > 0 ? (
                 <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {transfers.map((transfer) => (
-                        <DataTransferCard
-                            key={transfer['@id']}
-                            transfer={transfer}
-                            onFetchData={handleFetchData}
-                            isFetching={fetchingTransferId === transfer['@id']}
-                        />
-                    ))}
+                    {transfers.map((transfer) => {
+                        const asset = getAssetForTransfer(transfer.assetId);
+                        const requiresSigning = asset
+                            ? Boolean(asset.contractAddress && asset.chainId)
+                            : false;
+
+                        return (
+                            <DataTransferCard
+                                key={transfer['@id']}
+                                transfer={transfer}
+                                onFetchData={handleFetchData}
+                                isFetching={fetchingTransferId === transfer['@id']}
+                                isSigning={signingTransferId === transfer['@id']}
+                                requiresSigning={requiresSigning}
+                            />
+                        );
+                    })}
                 </div>
             ) : (
-                <div className="text-center p-8 border rounded-lg">
-                    <p className="text-muted-foreground">No data transfers found</p>
-                    <p className="text-sm text-muted-foreground mt-2">
-                        Initiate transfers from the Agreements page
+                <div className="flex flex-col items-center justify-center p-12 text-center border rounded-lg">
+                    <ArrowRightLeft className="w-16 h-16 text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">No data transfers found</h3>
+                    <p className="text-muted-foreground max-w-md mb-4">
+                        Initiate transfers from the Agreements page.
                     </p>
+                    <Button asChild>
+                        <Link to="/agreements">Go to Agreements</Link>
+                    </Button>
                 </div>
             )}
         </div>
