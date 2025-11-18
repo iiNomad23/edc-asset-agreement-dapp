@@ -90,7 +90,7 @@ const MyNFTsPage: React.FC = () => {
 
     if (!isConnected) {
         return (
-            <div className="flex flex-col items-center justify-center p-12 text-center">
+            <div className="flex flex-col items-center justify-center p-12 text-center border rounded-lg">
                 <Shield className="w-16 h-16 text-muted-foreground mb-4" />
                 <h2 className="text-2xl font-bold mb-2">Connect Your Wallet</h2>
                 <p className="text-muted-foreground max-w-md">
@@ -108,7 +108,7 @@ const MyNFTsPage: React.FC = () => {
         );
     }
 
-    if (!tokenIds || tokenIds.length === 0) {
+    if (!tokenIds || tokenIds.length <= 0) {
         return (
             <div className="space-y-6">
                 <div>
@@ -120,7 +120,7 @@ const MyNFTsPage: React.FC = () => {
 
                 <div className="flex flex-col items-center justify-center p-12 text-center border rounded-lg">
                     <Shield className="w-16 h-16 text-muted-foreground mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">No NFTs Yet</h3>
+                    <h3 className="text-xl font-semibold mb-2">No NFTs found</h3>
                     <p className="text-muted-foreground max-w-md mb-4">
                         You have not minted any agreement NFTs yet. Visit the Agreements page to mint your first NFT.
                     </p>
@@ -138,7 +138,7 @@ const MyNFTsPage: React.FC = () => {
                 <div>
                     <h2 className="text-2xl font-bold mb-1">My Agreement NFTs</h2>
                     <p className="text-sm text-muted-foreground">
-                        You have {tokenIds.length} agreement NFT{tokenIds.length !== 1 ? 's' : ''}
+                        View and manage your minted contract agreement NFTs
                     </p>
                 </div>
                 <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">

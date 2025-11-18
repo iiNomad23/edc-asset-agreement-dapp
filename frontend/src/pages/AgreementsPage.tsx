@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { FileText, Loader2 } from 'lucide-react';
 import { ContractAgreement } from '@/types/contract.ts';
 import ContractAgreementCard from '@/components/cards/ContractAgreementCard.tsx';
 import { useAccount, useChainId } from 'wagmi';
-import { useEDCAgreementNFT } from '@/hooks/useEDCAgreementNFT.ts';
+import { useEDCAgreementNFT, useMintPrice } from '@/hooks/useEDCAgreementNFT.ts';
 import { toast } from 'sonner';
 import { generateAgreementMetadata, metadataToDataURI } from '@/lib/nftMetadataUtils.ts';
 import { BACKEND_URL } from '@/config/env.ts';
@@ -15,6 +15,8 @@ import { TransferProcessRequest } from '@/types/transfer.ts';
 import { handleApiError } from '@/lib/apiUtils.ts';
 import { CatalogAsset } from '@/types/catalog.ts';
 import { useAssetsQuery } from '@/hooks/useAssetsQuery.ts';
+import { Button } from '@/components/ui/button.tsx';
+import { Link } from 'react-router-dom';
 
 const AgreementsPage = (): React.ReactNode => {
     const [mintingAgreementId, setMintingAgreementId] = useState<string | null>(null);
@@ -188,14 +190,6 @@ const AgreementsPage = (): React.ReactNode => {
                 </p>
             </div>
 
-            {!isConnected && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <p className="text-sm text-yellow-800">
-                        Connect your wallet to mint agreement NFTs
-                    </p>
-                </div>
-            )}
-
             {agreements && agreements.length > 0 ? (
                 <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                     {agreements.map((agreement) => {
@@ -216,11 +210,15 @@ const AgreementsPage = (): React.ReactNode => {
                     })}
                 </div>
             ) : (
-                <div className="text-center p-8 border rounded-lg">
-                    <p className="text-muted-foreground">No contract agreements found</p>
-                    <p className="text-sm text-muted-foreground mt-2">
-                        Negotiate contracts from the Assets page to create agreements
+                <div className="flex flex-col items-center justify-center p-12 text-center border rounded-lg">
+                    <FileText className="w-16 h-16 text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">No contract agreements found</h3>
+                    <p className="text-muted-foreground max-w-md mb-4">
+                        Negotiate contracts from the Assets page to create agreements.
                     </p>
+                    <Button asChild>
+                        <Link to="/">Go to Assets</Link>
+                    </Button>
                 </div>
             )}
         </div>
