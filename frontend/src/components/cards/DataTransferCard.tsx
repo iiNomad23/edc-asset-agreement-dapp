@@ -11,12 +11,21 @@ interface DataTransferCardProps {
     transfer: TransferProcess;
     onFetchData: (transfer: TransferProcess) => void;
     isFetching: boolean;
+    isSigning: boolean;
+    requiresSigning: boolean;
 }
 
-const DataTransferCard: React.FC<DataTransferCardProps> = ({ transfer, onFetchData, isFetching }) => {
+const DataTransferCard: React.FC<DataTransferCardProps> = ({
+    transfer,
+    onFetchData,
+    isFetching,
+    isSigning,
+    requiresSigning,
+}) => {
     const formattedDate = formatTimestamp(transfer.stateTimestamp);
     const isInStartedState = transfer.state === 'STARTED';
     const isInErrorState = transfer.state === 'TERMINATED' || transfer.state === 'ERROR';
+    const isFetchDataButtonDisabled = !isInStartedState || isSigning || isFetching;
 
     return (
         <Card className={cn('min-w-[320px]', isInErrorState && 'opacity-60 border-red-200')}>
@@ -88,12 +97,17 @@ const DataTransferCard: React.FC<DataTransferCardProps> = ({ transfer, onFetchDa
                 </div>
                 <Button
                     onClick={() => onFetchData(transfer)}
-                    disabled={!isInStartedState || isFetching}
+                    disabled={isFetchDataButtonDisabled}
                     variant="outline"
                     size="sm"
                     className="w-full"
                 >
-                    {isFetching ? (
+                    {isSigning ? (
+                        <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Please Sign in Wallet...
+                        </>
+                    ) : isFetching ? (
                         <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                             Fetching Data...
@@ -101,7 +115,7 @@ const DataTransferCard: React.FC<DataTransferCardProps> = ({ transfer, onFetchDa
                     ) : (
                         <>
                             <ArrowDownToLine className="w-4 h-4 mr-2" />
-                            Fetch Data
+                            {requiresSigning ? 'Sign & Fetch Data' : 'Fetch Data'}
                         </>
                     )}
                 </Button>

@@ -13,6 +13,7 @@ import { useAssetsQuery } from '@/hooks/useAssetsQuery.ts';
 
 const TransfersPage: React.FC = () => {
     const [fetchingTransferId, setFetchingTransferId] = useState<string | null>(null);
+    const [signingTransferId, setSigningTransferId] = useState<string | null>(null);
     const { address, isConnected } = useAccount();
     const { signMessageAsync } = useSignMessage();
     const currentChainId = useChainId();
@@ -80,8 +81,6 @@ const TransfersPage: React.FC = () => {
 
     const handleFetchData = async (transfer: TransferProcess) => {
         try {
-            setFetchingTransferId(transfer['@id']);
-
             const asset = getAssetForTransfer(transfer.assetId);
             if (!asset) {
                 // noinspection ExceptionCaughtLocallyJS
@@ -89,7 +88,12 @@ const TransfersPage: React.FC = () => {
             }
 
             if (asset.contractAddress && asset.chainId) {
+                setSigningTransferId(transfer['@id']);
+
                 const { signature, message } = await generateSIWESignature(Number(asset.chainId), transfer);
+
+                setSigningTransferId(null);
+                setFetchingTransferId(transfer['@id']);
 
                 const response = await fetch(
                     `${BACKEND_URL}/api/transfers/fetch-data`,
@@ -121,6 +125,8 @@ const TransfersPage: React.FC = () => {
 
                 console.log('Fetched data (with NFT verification):', data);
             } else {
+                setFetchingTransferId(transfer['@id']);
+
                 const response = await fetch(
                     `${BACKEND_URL}/api/transfers/${transfer['@id']}/fetch-data`,
                 );
@@ -147,6 +153,7 @@ const TransfersPage: React.FC = () => {
             });
         } finally {
             setFetchingTransferId(null);
+            setSigningTransferId(null);
         }
     };
 
@@ -169,14 +176,23 @@ const TransfersPage: React.FC = () => {
 
             {transfers && transfers.length > 0 ? (
                 <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {transfers.map((transfer) => (
-                        <DataTransferCard
-                            key={transfer['@id']}
-                            transfer={transfer}
-                            onFetchData={handleFetchData}
-                            isFetching={fetchingTransferId === transfer['@id']}
-                        />
-                    ))}
+                    {transfers.map((transfer) => {
+                        const asset = getAssetForTransfer(transfer.assetId);
+                        const requiresSigning = asset
+                            ? Boolean(asset.contractAddress && asset.chainId)
+                            : false;
+
+                        return (
+                            <DataTransferCard
+                                key={transfer['@id']}
+                                transfer={transfer}
+                                onFetchData={handleFetchData}
+                                isFetching={fetchingTransferId === transfer['@id']}
+                                isSigning={signingTransferId === transfer['@id']}
+                                requiresSigning={requiresSigning}
+                            />
+                        );
+                    })}
                 </div>
             ) : (
                 <div className="text-center p-8 border rounded-lg">
