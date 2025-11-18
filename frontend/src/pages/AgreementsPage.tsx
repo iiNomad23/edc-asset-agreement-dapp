@@ -22,6 +22,7 @@ const AgreementsPage = (): React.ReactNode => {
     const { address, isConnected } = useAccount();
     const chainId = useChainId();
     const { mintAgreement } = useEDCAgreementNFT();
+    const { mintPrice } = useMintPrice();
 
     const { data: assetsData, isLoading: isLoadingAssets } = useAssetsQuery();
     const { data: agreements, isLoading: isLoadingAgreements } = useQuery({
@@ -99,6 +100,11 @@ const AgreementsPage = (): React.ReactNode => {
             return;
         }
 
+        if (mintPrice === undefined) {
+            toast.error('Unable to fetch mint price');
+            return;
+        }
+
         try {
             setMintingAgreementId(agreement['@id']);
 
@@ -128,7 +134,7 @@ const AgreementsPage = (): React.ReactNode => {
                 signedAt: signedAtInSeconds,
                 expiresAt: expiresAtInSeconds,
                 tokenURI: tokenURI,
-            });
+            }, mintPrice);
 
             toast.success('NFT minting successful!');
         } catch (error) {
@@ -198,12 +204,13 @@ const AgreementsPage = (): React.ReactNode => {
                             <ContractAgreementCard
                                 key={agreement['@id']}
                                 agreement={agreement}
-                                asset={asset}
                                 isConnected={isConnected}
                                 isMinting={isMinting(agreement['@id'])}
                                 isInitiatingTransfer={isInitiatingTransfer(agreement['@id'])}
                                 onMint={() => handleMintNFT(agreement)}
                                 onInitiateTransfer={() => handleInitiateTransfer(agreement)}
+                                asset={asset}
+                                mintPrice={mintPrice}
                             />
                         );
                     })}

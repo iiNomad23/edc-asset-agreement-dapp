@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 import { cn, formatTimestamp } from '@/lib/utils.ts';
 import { Address } from 'viem';
-import { shortenId } from '@/lib/nftMetadataUtils.ts';
+import { shortenString } from '@/lib/nftMetadataUtils.ts';
 import { useAccount, useChainId } from 'wagmi';
 import CopyButton from '@/components/CopyButton.tsx';
 import { ETHERSCAN_BASES } from '@/config/constants.ts';
@@ -68,7 +68,7 @@ const AgreementNFTCard: React.FC<AgreementNFTCardProps> = ({ tokenId, contractAd
                         <CardDescription className="mt-1">
                             <div>
                                 <p className="text-muted-foreground mb-1 break-all flex items-center">
-                                    Contract: {shortenId(contractAddress, 8)}
+                                    Contract: {shortenString(contractAddress, 8)}
                                     <CopyButton text={contractAddress} />
                                 </p>
                                 <p className="text-muted-foreground mb-1 break-all flex items-center flex-wrap gap-3">
@@ -91,7 +91,7 @@ const AgreementNFTCard: React.FC<AgreementNFTCardProps> = ({ tokenId, contractAd
                                             </Tooltip>
                                         ) : txHash ? (
                                             <>
-                                                TxHash: {shortenId(txHash, 8)}
+                                                TxHash: {shortenString(txHash, 8)}
                                                 <CopyButton text={txHash} />
                                             </>
                                         ) : (
