@@ -55,7 +55,7 @@ const DataTransferCard: React.FC<DataTransferCardProps> = ({
                                 </TooltipContent>
                             </Tooltip>
                         ) : (
-                            <Badge variant="secondary">
+                            <Badge variant={isInErrorState ? 'destructive' : 'secondary'}>
                                 {transfer.state}
                             </Badge>
                         )}
