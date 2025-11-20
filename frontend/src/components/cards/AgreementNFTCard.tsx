@@ -192,7 +192,7 @@ const AgreementNFTCard: React.FC<AgreementNFTCardProps> = ({ tokenId, contractAd
                         </div>
                         {agreement.expiresAt > 0n && (
                             <div>
-                                <p className="text-muted-foreground mb-1">Expires At</p>
+                                <p className="text-muted-foreground mb-1">{isExpired ? 'Expired At' : 'Expires At'}</p>
                                 <p className="font-mono text-xs break-all">{formatTimestamp(Number(agreement.expiresAt) * 1000)}</p>
                             </div>
                         )}
