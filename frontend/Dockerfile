@@ -10,7 +10,6 @@ RUN npm ci --ignore-scripts
 
 COPY .env .env
 COPY . .
-
 RUN npm run build
 
 FROM base AS final
