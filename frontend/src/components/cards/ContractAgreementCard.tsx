@@ -32,52 +32,91 @@ const ContractAgreementCard: React.FC<AgreementCardProps> = ({
     mintPrice,
 }) => {
     const formattedDate = formatTimestamp(agreement.contractSigningDate * 1000);
-    const isNftRequired = asset?.contractAddress && asset?.chainId;
     const assetChainName = asset?.chainName;
+    const assetChainId = asset?.chainId;
+    const assetContractAddress = asset?.contractAddress;
+    const isNftRequired = assetContractAddress && assetChainId;
 
-    const renderMintButton = () => (
-        <Button
-            onClick={onMint}
-            disabled={!isConnected || isMinting}
-            variant="outline"
-            size="sm"
-            className="w-full"
-        >
-            {isMinting ? (
-                <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Minting NFT...
-                </>
-            ) : mintPrice ? (
-                <>
+    let expiresAt = 0;
+    let isExpired = false;
+    if (asset?.agreementExpiresAfter) {
+        const signedAtInSeconds = agreement.contractSigningDate;
+        const agreementExpiresAfterInSeconds = Number(asset.agreementExpiresAfter);
+        const expiresAtInSeconds = signedAtInSeconds + agreementExpiresAfterInSeconds;
+        const now = Math.floor(Date.now() / 1000);
+        expiresAt = expiresAtInSeconds;
+        isExpired = expiresAtInSeconds < now;
+    }
+
+    const renderMintButton = () => {
+        return (
+            <Button
+                onClick={onMint}
+                disabled={!isConnected || isMinting || isExpired}
+                variant="outline"
+                size="sm"
+                className="w-full"
+            >
+                {isMinting ? (
+                    <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Minting NFT...
+                    </>
+                ) : mintPrice ? (
+                    <>
                     <span className="flex items-center">
                         <Shield className="w-4 h-4 mr-2" />
                         Mint contract agreement NFT
                     </span>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
                             <span className="flex items-center">
                                 {`(${shortenString(formatEther(mintPrice), 3)} ETH)`}
                             </span>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                            <div className="space-y-1">
-                                <p className="font-semibold text-sm">Mint Price</p>
-                                <p className="text-xs">
-                                    {`${formatEther(mintPrice)} ETH`}
-                                </p>
-                            </div>
-                        </TooltipContent>
-                    </Tooltip>
-                </>
-            ) : (
-                <>
-                    <Shield className="w-4 h-4 mr-2" />
-                    Mint contract agreement NFT
-                </>
-            )}
-        </Button>
-    );
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                                <div className="space-y-1">
+                                    <p className="font-semibold text-sm">Mint Price</p>
+                                    <p className="text-xs">
+                                        {`${formatEther(mintPrice)} ETH`}
+                                    </p>
+                                </div>
+                            </TooltipContent>
+                        </Tooltip>
+                    </>
+                ) : (
+                    <>
+                        <Shield className="w-4 h-4 mr-2" />
+                        Mint contract agreement NFT
+                    </>
+                )}
+            </Button>
+        );
+    };
+
+    const renderInitiateTransferButton = () => {
+        return (
+            <Button
+                onClick={onInitiateTransfer}
+                disabled={isInitiatingTransfer || isExpired}
+                variant="outline"
+                size="sm"
+                className="w-full"
+            >
+                {isInitiatingTransfer ? (
+                    <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Initiating Transfer...
+                    </>
+                ) : (
+                    <>
+                        <ArrowRightLeft className="w-4 h-4 mr-2" />
+                        Initiate Data Transfer
+                    </>
+                )}
+            </Button>
+        );
+    };
 
     return (
         <Card className="flex flex-col h-full min-w-[320px]">
@@ -94,13 +133,37 @@ const ContractAgreementCard: React.FC<AgreementCardProps> = ({
                             </p>
                         </CardDescription>
                     </div>
-                    <div className="flex items-center gap-2 h-7">
-                        {isNftRequired && (
-                            <Badge variant="secondary">
-                                NFT Required
-                            </Badge>
-                        )}
-                    </div>
+                    {isNftRequired && (
+                        <div className="flex items-center gap-2 h-7">
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Badge variant="secondary">
+                                        NFT Required
+                                    </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                    <div className="space-y-2 text-sm">
+                                        {assetChainName ? (
+                                            <div>
+                                                <p className="text-neutral-400 dark:text-neutral-600 mb-1">Chain
+                                                    Name</p>
+                                                <p className="font-mono text-xs break-all">{assetChainName}</p>
+                                            </div>
+                                        ) : null}
+                                        <div>
+                                            <p className="text-neutral-400 dark:text-neutral-600 mb-1">Chain ID</p>
+                                            <p className="font-mono text-xs break-all">{assetChainId}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-neutral-400 dark:text-neutral-600 mb-1">Contract
+                                                Address</p>
+                                            <p className="font-mono text-xs break-all">{assetContractAddress}</p>
+                                        </div>
+                                    </div>
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
+                    )}
                 </div>
             </CardHeader>
             <CardContent className="space-y-4 flex-1 flex flex-col justify-end">
@@ -120,10 +183,10 @@ const ContractAgreementCard: React.FC<AgreementCardProps> = ({
                             <p className="text-muted-foreground mb-1">Asset ID</p>
                             <p className="font-mono text-xs break-all">{agreement.assetId}</p>
                         </div>
-                        {isNftRequired && assetChainName && (
+                        {expiresAt > 0 && (
                             <div>
-                                <p className="text-muted-foreground mb-1">Chain Name</p>
-                                <p className="font-mono text-xs break-all">{assetChainName}</p>
+                                <p className="text-muted-foreground mb-1">{isExpired ? 'Expired At' : 'Expires At'}</p>
+                                <p className="font-mono text-xs break-all">{formatTimestamp(expiresAt * 1000)}</p>
                             </div>
                         )}
                     </div>
@@ -152,29 +215,39 @@ const ContractAgreementCard: React.FC<AgreementCardProps> = ({
                             </p>
                         </TooltipContent>
                     </Tooltip>
+                ) : isExpired ? (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <span className="flex items-center">
+                                {renderMintButton()}
+                            </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p className="text-xs">
+                                Agreement is already expired
+                            </p>
+                        </TooltipContent>
+                    </Tooltip>
                 ) : (
                     renderMintButton()
                 )}
 
-                <Button
-                    onClick={onInitiateTransfer}
-                    disabled={isInitiatingTransfer}
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                >
-                    {isInitiatingTransfer ? (
-                        <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Initiating Transfer...
-                        </>
-                    ) : (
-                        <>
-                            <ArrowRightLeft className="w-4 h-4 mr-2" />
-                            Initiate Data Transfer
-                        </>
-                    )}
-                </Button>
+                {isExpired ? (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <span className="flex items-center">
+                                {renderInitiateTransferButton()}
+                            </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p className="text-xs">
+                                Agreement is already expired
+                            </p>
+                        </TooltipContent>
+                    </Tooltip>
+                ) : (
+                    renderInitiateTransferButton()
+                )}
             </CardContent>
         </Card>
     );
