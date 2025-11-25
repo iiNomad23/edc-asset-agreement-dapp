@@ -5,7 +5,7 @@ EXPOSE 8080
 FROM node:22-alpine AS build
 WORKDIR /build
 
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json .npmrc ./
 RUN npm ci --ignore-scripts
 
 COPY .env .env
