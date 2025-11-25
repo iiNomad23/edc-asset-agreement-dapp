@@ -21,7 +21,7 @@ export class EdcService {
 
         try {
             const response = await axios.post(
-                `${this.baseUrl}/api/catalog/v1alpha/catalog/query`,
+                `${this.baseUrl}/api/management/v3/assets/request`,
                 payload,
                 {
                     headers: {
