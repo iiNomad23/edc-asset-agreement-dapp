@@ -1,10 +1,12 @@
 # Ignore local environment files (for development only)
 .env.local
 .env*.local
+.env.example
+.env*.example
 
 # Ignore build artifacts
-node_modules
 dist
+node_modules
 
 # Ignore git files
 .git

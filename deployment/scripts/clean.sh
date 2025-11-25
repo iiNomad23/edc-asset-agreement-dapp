@@ -1,5 +1,5 @@
 #!/bin/bash
 set -e
 
-echo "Removing dangling images..."
-docker image prune -f
+echo "Removing unused Docker resources..."
+docker system prune -f

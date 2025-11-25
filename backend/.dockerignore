@@ -1,6 +1,6 @@
 # Ignore local environment files (for development only)
-.env.local
-.env*.local
+.env
+.env*
 
 # Ignore build artifacts (will be built fresh in Docker)
 dist

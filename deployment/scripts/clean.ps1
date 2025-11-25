@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
 $ErrorActionPreference = "Stop"
 
-Write-Host "Removing dangling images..." -ForegroundColor Yellow
-docker image prune -f
+Write-Host "Removing unused Docker resources..." -ForegroundColor Yellow
+docker system prune -f
