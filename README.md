@@ -13,6 +13,14 @@ signing a data request message with the connected Ethereum wallet.
 The DApp interacts with the EDC's management API to create contract agreements.  
 After that, the DApp allows the user to mint the NFT associated with the contract agreement and fetch the asset data via the providers public dataplane API.
 
+### Projects
+The DApp consists of three main projects:
+- **Smart Contracts**: A Hardhat project implementing the NFT-based agreement smart contract
+- **Backend**: A Node.js Fastify server that handles interactions between the frontend and the EDC APIs
+- **Frontend**: A React application built with Vite, Wagmi and RainbowKit for Web3 integration
+
+Additionally, the repository contains deployment scripts for the DApp.
+
 ## Prerequisites
 A Minimum Viable Dataspace (MVD) with the following repositories as consumer and provider:
 - [MVD Provider](https://github.com/iiNomad23/mvd-provider)
