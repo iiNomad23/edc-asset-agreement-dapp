@@ -9,7 +9,7 @@ This is a [Vite](https://vitejs.dev) project bootstrapped with [`create-wagmi`](
 - Interact with the Backend to create contract agreements and transfer processes
 - Mint agreement NFTs
 - Request data access by signing a data request message ([SIWE](https://eips.ethereum.org/EIPS/eip-4361)) with the connected Ethereum wallet
-- Fetch asset data via the provider's public dataplane API
+- Fetch asset data via the provider's public data plane API
 
 ## Prerequisites
 
