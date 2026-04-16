@@ -24,7 +24,7 @@
     "@fastify/cors": "^11.1.0",
     "axios": "^1.15.0",
     "dotenv": "^17.2.3",
-    "fastify": "^5.6.1",
+    "fastify": "^5.8.5",
     "viem": "2.38.3"
   },
   "devDependencies": {
